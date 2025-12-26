@@ -12,7 +12,7 @@ export default function Home() {
             href={`/tnt/${product.slug}`}
             className="block p-6 border rounded-lg hover:shadow-lg transition bg-white"
           >
-            <h2 className="text-xl font-bold">{product.name}</h2>
+            <h2 className="text-xl font-bold text-black">{product.name}</h2>
             <p className="text-gray-600 mt-2">Rs. {product.price}</p>
             <p className="text-blue-500 mt-4 text-sm">Click to view unique URL</p>
             <div className="mt-2 text-xs bg-gray-100 p-2 rounded">/tnt/{product.slug}</div>
