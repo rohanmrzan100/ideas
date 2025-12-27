@@ -1,78 +1,151 @@
-// app/data.ts
+// lib/data.ts
 
-export interface Product {
-  id: number;
-  slug: string; // The unique URL part
+export type ProductVariant = {
+  sku: string;
+  size: string;
+  color: string;
+  stock: number;
+  image: string;
+};
+
+export type Product = {
   name: string;
-  price: number;
-  code: string;
-  colors: string[];
-  sizes: string[];
-  image: string; // URL for the image
   description: string;
-}
+  price: number;
+  shop_id: string;
+  images: { url: string; position: number }[];
+  variants: ProductVariant[];
+};
 
 export const products: Product[] = [
   {
-    id: 1,
-    slug: 'product-1',
-    name: 'Classic Cotton T-Shirt (Red)',
-    price: 1200,
-    code: 'CCT',
-    colors: ['Red'],
-    sizes: ['M', 'L', 'XL'],
-    image: 'https://i2.pickpik.com/photos/23/376/973/t-shirt-red-man-plain-preview.jpg', // Dummy Image
-    description: 'High quality cotton red t-shirt.',
+    name: 'Essential Organic Cotton Crewneck',
+    description:
+      'A daily staple. Made from 100% organic cotton, pre-shrunk for a perfect fit that lasts.',
+    shop_id: 'c6f6e528-0629-4364-9022-723525287895',
+    price: 5000,
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
+        position: 1,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+        position: 2,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+        position: 3,
+      },
+    ],
+    variants: [
+      {
+        sku: 'TEE-WHT-S',
+        size: 'S',
+        color: 'White',
+        stock: 50,
+        image:
+          'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
+      },
+      {
+        sku: 'TEE-WHT-M',
+        size: 'M',
+        color: 'White',
+        stock: 42,
+        image:
+          'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
+      },
+      {
+        sku: 'TEE-BLK-M',
+        size: 'M',
+        color: 'Black',
+        stock: 20,
+        image:
+          'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+      },
+      {
+        sku: 'TEE-BLK-L',
+        size: 'L',
+        color: 'Black',
+        stock: 15,
+        image:
+          'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80',
+      },
+    ],
   },
   {
-    id: 2,
-    slug: 'product-2',
-    name: 'Classic Cotton T-Shirt (Green)',
-    price: 1200,
-    code: 'CCT',
-    colors: ['Green'],
-    sizes: ['M', 'L'],
-    image: 'https://ghillieuk.com/cdn/shop/files/24.png?v=1762352708&width=1946',
-    description: 'Eco-friendly green t-shirt.',
+    name: 'Velocity Red Runner X1',
+    description:
+      'Engineered for speed. Features breathable mesh and our signature foam sole for impact absorption.',
+    price: 150.0,
+    shop_id: 'c6f6e528-0629-4364-9022-723525287895',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+        position: 1,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80',
+        position: 2,
+      },
+    ],
+    variants: [
+      {
+        sku: 'RUN-RED-US8',
+        size: 'US 8',
+        color: 'Red',
+        stock: 10,
+        image:
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      },
+      {
+        sku: 'RUN-RED-US9',
+        size: 'US 9',
+        color: 'Red',
+        stock: 5,
+        image:
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      },
+      {
+        sku: 'RUN-RED-US10',
+        size: 'US 10',
+        color: 'Red',
+        stock: 0,
+        image:
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      },
+    ],
   },
   {
-    id: 3,
-    slug: 'product-3',
-    name: 'Classic Cotton T-Shirt (Blue)',
-    price: 1250,
-    code: 'CCT',
-    colors: ['Blue'],
-    sizes: ['S', 'M', 'L', 'XXL'],
-    image:
-      'https://www.dixxon.com/cdn/shop/files/executive-short-sleeve-blue-635540.png?v=1713211641&width=1638',
-    description: 'Deep ocean blue cotton t-shirt.',
-  },
-  {
-    id: 4,
-    slug: 'product-4',
-    name: 'Classic Cotton T-Shirt (Black)',
-    price: 1300,
-    code: 'CCT',
-    colors: ['Black'],
-    sizes: ['L', 'XL'],
-    image: 'https://jetpilot.com.au/cdn/shop/products/JPW21-BLACK-01.jpg?v=1626151047&width=2048',
-    description: 'Premium black formal t-shirt.',
-  },
-  {
-    id: 5,
-    slug: 'product-5',
-    name: 'Classic Cotton T-Shirt (White)',
-    price: 1100,
-    code: 'CCT',
-    colors: ['White'],
-    sizes: ['S', 'M'],
-    image: 'https://i1.pickpik.com/photos/126/699/754/man-white-shirt-male-person-preview.jpg',
-    description: 'Standard white daily wear t-shirt.',
+    name: 'Sonic Pro Wireless Headphones',
+    description: 'Active noise cancelling with 30-hour battery life. Premium silver finish.',
+    price: 150.0,
+    shop_id: 'c6f6e528-0629-4364-9022-723525287895',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
+        position: 1,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=800&q=80',
+        position: 2,
+      },
+    ],
+    variants: [
+      {
+        sku: 'HP-SILVER-STD',
+        size: 'Standard',
+        color: 'Silver',
+        stock: 100,
+        image:
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
+      },
+    ],
   },
 ];
 
-// Helper function to simulate a Database Fetch
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  // In a real app, this is where you do: await db.product.findUnique(...)
-  return products.find((p) => p.slug === slug);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  return products.find((p) => p.name.toLowerCase().replace(/ /g, '-') === slug);
 }
