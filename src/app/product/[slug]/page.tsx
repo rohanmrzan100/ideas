@@ -18,16 +18,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.name} | My Store`,
+    title: `Price : Rs ${product.price} | Sizes : ${product.variants
+      .map((v) => v.size)
+      .join(' - ')} | Color : ${product.variants.map((v) => v.color).join(' - ')} `,
     description: product.description,
     openGraph: {
       images: [product.images[0].url],
+      title: `Price : Rs ${product.price} | Sizes : ${product.variants
+        .map((v) => v.size)
+        .join(' - ')} | Color : ${product.variants.map((v) => v.color).join(' - ')} `,
     },
   };
 }
 
 export default async function ProductPage({ params }: Props) {
-  // 3. Await params here as well
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
 
