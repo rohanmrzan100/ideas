@@ -1,3 +1,4 @@
+import Carousel from './components/Carousel';
 import { products } from './data';
 import Link from 'next/link';
 
@@ -6,6 +7,8 @@ export default function Home() {
     <main className="min-h-screen p-10">
       <h1 className="text-4xl font-bold mb-8">Admin Dashboard / Product List</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Carousel />
+
         {products.map((product) => (
           <Link
             key={product.description}
