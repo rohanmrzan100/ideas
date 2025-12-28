@@ -71,45 +71,6 @@ export default function ProductWizard({ shopId }: { shopId: string }) {
   // --- LOGIC: HANDLE FILE UPLOAD ---
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     return;
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-
-    try {
-      // 1. Get Signature from your Backend
-      const signRes = await fetch('http://localhost:3000/cloudinary/signature');
-      const { signature, timestamp, cloudName, apiKey } = await signRes.json();
-
-      // 2. Upload each file to Cloudinary
-      const uploads = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('api_key', apiKey);
-        formData.append('timestamp', timestamp.toString());
-        formData.append('signature', signature);
-        formData.append('folder', 'products');
-
-        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await uploadRes.json();
-        return data.secure_url; // The URL we need
-      });
-
-      const urls = await Promise.all(uploads);
-
-      // 3. Add to Form State
-      urls.forEach((url, idx) => {
-        appendImage({ url, position: watchedImages.length + idx });
-      });
-    } catch (err) {
-      console.error('Upload failed', err);
-      alert('Upload failed. Check console.');
-    } finally {
-      setUploading(false);
-    }
   };
 
   // --- LOGIC: NAVIGATION ---
