@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Product, ProductVariant } from '../data';
 import Image from 'next/image';
+import { Product } from '@/app/data';
 
 export default function ProductUI({ product }: { product: Product }) {
   // 1. Determine unique options from variants

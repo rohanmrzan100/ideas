@@ -1,15 +1,13 @@
-"use client";
+'use client';
 import {
   Field,
   FieldDescription,
-  FieldError,
   FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@/components/ui/field";
-import { Switch } from "@radix-ui/react-switch";
-import { Input } from "./ui/input";
+} from '@/components/ui/field';
+import { Input } from './ui/input';
 import {
   Select,
   SelectContent,
@@ -17,9 +15,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from './ui/select';
 
-const Form = () => {
+const ProductInfoForm = () => {
   return (
     <div className="p-10 flex flex-col min-h-screen">
       <form>
@@ -33,9 +31,7 @@ const Form = () => {
             <Field>
               <FieldLabel htmlFor="phone-number">Phone Number</FieldLabel>
               <Input id="username" autoComplete="off" />
-              <FieldDescription>
-                We will sms / call you to confirm your order
-              </FieldDescription>
+              <FieldDescription>We will sms / call you to confirm your order</FieldDescription>
             </Field>
             <FieldLabel>Address</FieldLabel>
             <div className="grid grid-cols-2 gap-4">
@@ -59,9 +55,7 @@ const Form = () => {
             </div>
             <Field>
               <Input placeholder="Landmark... (Optional)" />
-              <FieldDescription>
-                We will deliver the order to this address
-              </FieldDescription>
+              <FieldDescription>We will deliver the order to this address</FieldDescription>
             </Field>
           </FieldGroup>
         </FieldSet>
@@ -84,4 +78,4 @@ const Form = () => {
   );
 };
 
-export default Form;
+export default ProductInfoForm;

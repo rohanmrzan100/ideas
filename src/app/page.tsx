@@ -1,4 +1,4 @@
-import Carousel from './components/Carousel';
+import Carousel from '@/components/Carousel';
 import { products } from './data';
 import Link from 'next/link';
 
@@ -12,7 +12,7 @@ export default function Home() {
         {products.map((product) => (
           <Link
             key={product.description}
-            href={`/product/${product.name.toLowerCase().replace(/ /g, '-')}`}
+            href={`/product/${product.name.toLowerCase().replace(/ /g, '-')}/products-page`}
             className="block p-6 border rounded-lg hover:shadow-lg transition bg-white"
           >
             <h2 className="text-xl font-bold text-black">{product.name}</h2>
