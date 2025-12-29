@@ -321,7 +321,5 @@ export const products: Product[] = [
 ];
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
   return products.find((p) => p.name.toLowerCase().replace(/ /g, '-') === slug);
 }

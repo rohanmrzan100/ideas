@@ -3,10 +3,10 @@ import Carousel from './Carousel';
 
 const ProductCard = ({ name, description, price, product_variants, productImages }: Product) => {
   return (
-    <div className="flex flex-col gap-1">
-      <h1>Product Details</h1>
+    <div className="flex flex-col gap-1 w-">
       <div className="Product Images">
-        <Carousel productImages={productImages} />
+        {/* <Carousel productImages={productImages} /> */}
+        {/* //singel image */}
       </div>
       <div className="name-description mt-2">
         <p className="text-center">{name}</p>
