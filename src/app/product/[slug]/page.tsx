@@ -1,7 +1,5 @@
 import { getProductBySlug } from '@/app/data';
-import PersonalInfoForm from '@/components/PersonalInfoForm';
-import ProductCard from '@/components/ProductCard';
-import ProductInformation from '@/components/ProductUI';
+import OrderingSteps from '@/components/order-steps';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -18,15 +16,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `Price : Rs ${product.price} | Sizes : ${product.product_variants
-      .map((v) => v.size)
-      .join(' - ')} | Color : ${product.product_variants.map((v) => v.color).join(' - ')} `,
+    title: `${product.name} | Rs. ${product.price}`,
     description: product.description,
     openGraph: {
-      images: [product.productImages[0].url],
-      title: `Price : Rs ${product.price} | Sizes : ${product.product_variants
-        .map((v) => v.size)
-        .join(' - ')} | Color : ${product.product_variants.map((v) => v.color).join(' - ')} `,
+      images: [product.productImages[0]?.url || ''],
+      title: `${product.name} - Buy Now`,
     },
   };
 }
@@ -41,12 +35,13 @@ export default async function ProductPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl ">
-        <div className='flex justify-center'>
-          <ProductInformation product={product} />
-        </div>
-        <PersonalInfoForm />
+    <main className="min-h-screen bg-white flex flex-col items-center justify-center p-0 md:p-4">
+      {/* Responsive Container: 
+         - Mobile: w-full, min-h-screen (full screen app feel)
+         - Desktop: max-w-6xl, fixed height card (modern modal feel)
+      */}
+      <div className="w-full md:max-w-6xl bg-white min-h-screen md:min-h-0 md:h-[85vh] shadow-none  relative flex flex-col md:rounded-card overflow-hidden">
+        <OrderingSteps product={product} />
       </div>
     </main>
   );

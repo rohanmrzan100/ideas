@@ -65,14 +65,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: 'b3d3bf14-3b21-4c7f-8524-ca54ca66edd0',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 0,
         product_id: '4f53243f-6483-43ef-988d-b5bd8cb6d421',
       },
       {
         id: 'eae26028-0c0d-4b7e-b643-5e9624af948b',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: '4f53243f-6483-43ef-988d-b5bd8cb6d421',
@@ -112,14 +112,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: 'ccede31e-3845-45b1-a4c4-810f6e0d5a1a',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 0,
         product_id: '371780fb-8bb0-4924-963b-ef791c33eb12',
       },
       {
         id: 'de7b3e8f-76e4-40e2-b85d-cb1fb85d0db7',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: '371780fb-8bb0-4924-963b-ef791c33eb12',
@@ -132,7 +132,7 @@ export const products: Product[] = [
     description: 'Warm and cozy',
     shop_id: 'f9906287-ea84-4eaa-949d-a5508bc3af99',
     open_graph_image:
-      'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766908744/Insta-Shop/mvikbvjk5rtk1mogaxjo.jpg',
+      'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
     price: '99.99',
     display_price: null,
     product_variants: [
@@ -160,14 +160,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: 'ef55b9a1-1712-4bfa-9cbd-3d8255a164e8',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 0,
         product_id: '94f86c77-bfb8-4b62-b936-3260835535e7',
       },
       {
         id: 'e31c9a3f-492a-4464-ba86-96d2a1592828',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766899856/Insta-Shop/oqiwpsjwijzdlbtgoejb.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: '94f86c77-bfb8-4b62-b936-3260835535e7',
@@ -180,7 +180,7 @@ export const products: Product[] = [
     description: 'Warm and cozy',
     shop_id: 'f9906287-ea84-4eaa-949d-a5508bc3af99',
     open_graph_image:
-      'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766909710/Insta-Shop/effjezamljevddpkfj1b.jpg',
+      'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
     price: '99.99',
     display_price: null,
     product_variants: [
@@ -208,14 +208,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: 'ddabd010-3e1b-467d-a635-5bd4737e5980',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766905441/Insta-Shop/jdzaanvcnxsu5zf4chxc.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 0,
         product_id: 'a5d7c0f4-5b2e-46e9-bc77-d134f4a839cb',
       },
       {
         id: 'a93b2b4f-826c-4079-a673-32a509e6ce91',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766905441/Insta-Shop/jdzaanvcnxsu5zf4chxc.jpg',
+        url: 'https://img.drz.lazcdn.com/static/np/p/31aff552f93e09af9fc4701cc2bb8ac5.jpg_720x720q80.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: 'a5d7c0f4-5b2e-46e9-bc77-d134f4a839cb',
@@ -256,14 +256,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: '75f5e349-334e-42bc-a053-6810a29c825d',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766910262/Insta-Shop/tbwq4vk4d6wv1dqf57bi.jpg',
+        url: 'https://www.clothinginnepal.com/wp-content/uploads/2019/12/winter-clothng-18.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: '6290e672-ffa6-43a7-b14b-56a8876a3a4a',
       },
       {
         id: '6f3e4ad4-67e6-45c6-a8e0-947f096ea479',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766910242/Insta-Shop/xotdfkifawflqcwpqanw.jpg',
+        url: 'https://www.clothinginnepal.com/wp-content/uploads/2019/12/winter-clothng-18.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 2,
         product_id: '6290e672-ffa6-43a7-b14b-56a8876a3a4a',
@@ -304,14 +304,14 @@ export const products: Product[] = [
     productImages: [
       {
         id: '40326d41-4d0b-47a8-8d54-01bde4efe4b9',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766910262/Insta-Shop/tbwq4vk4d6wv1dqf57bi.jpg',
+        url: 'https://images.thdstatic.com/productImages/e2d9d98d-09f7-409d-b134-90e16f86a53a/svn/black-ice-foss-carpet-tile-7rdtn0915pk-e4_600.jpg',
         cloudinary_public_id: 'jacket_back_456',
         position: 1,
         product_id: 'd9f21001-6c70-4c10-b0a3-f0d3c7b6c455',
       },
       {
         id: 'bdf3218b-fb50-4898-a6de-95dde5e49829',
-        url: 'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766910242/Insta-Shop/xotdfkifawflqcwpqanw.jpg',
+        url: 'https://images.thdstatic.com/productImages/e2d9d98d-09f7-409d-b134-90e16f86a53a/svn/black-ice-foss-carpet-tile-7rdtn0915pk-e4_600.jpg',
         cloudinary_public_id: 'jacket_123',
         position: 2,
         product_id: 'd9f21001-6c70-4c10-b0a3-f0d3c7b6c455',

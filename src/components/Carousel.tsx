@@ -15,19 +15,25 @@ type CarouselProps = {
 
 const Carousel = ({ productImages }: CarouselProps) => {
   return (
-    <div className="relative w-full aspect-square">
+    <div className="relative w-full h-full min-h-100 md:min-h-0">
       <Swiper
         slidesPerView={1}
-        spaceBetween={30}
+        spaceBetween={0}
         loop
         pagination={{ clickable: true }}
-        // navigation
         modules={[Pagination, Navigation]}
         className="h-full w-full"
       >
         {productImages.map((item) => (
-          <SwiperSlide key={item.id}>
-            <Image src={item.url} alt="Product image" fill className="object-cover" priority />
+          <SwiperSlide key={item.id} className="relative bg-gray-50">
+            <Image
+              src={item.url}
+              alt="Product view"
+              fill
+              className="object-cover"
+              priority={item.position === 0}
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
           </SwiperSlide>
         ))}
       </Swiper>

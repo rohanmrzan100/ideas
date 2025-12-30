@@ -1,48 +1,40 @@
-import ProductCard from '@/components/ProductCard';
 import { products } from './data';
+import ProductCard from '@/components/ProductCard';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function Home() {
   return (
-    <main className="min-h-screen p-10">
-      <h1 className="text-4xl font-bold mb-8">Admin Dashboard / Product List</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* {products.map((product, index) => (
-          <ProductCard {...product} key={index} />
-        ))} */}
-        {products.map((product) => (
+    <main className="min-h-screen bg-gray-50/30 pb-20">
+      {/* Product Grid Section */}
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="flex items-end justify-between mb-10">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
+            <p className="text-gray-500 mt-2">Handpicked for you this season</p>
+          </div>
           <Link
-            key={product.id}
-            href={`/product/${product.name.toLowerCase().replace(/ /g, '-')}`}
-            className="group"
+            href="/products"
+            className="hidden md:flex items-center gap-2 text-sm font-bold border-b border-black pb-0.5 hover:text-gray-600 hover:border-gray-400 transition"
           >
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-              {/* Image */}
-              <div className="relative w-full aspect-3/4 lg:aspect-4/5 xl:aspect-1/1 bg-gray-50">
-                <Image
-                  src={product.productImages[0].url}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              {/* Content */}
-              <div className="px-5 py-4">
-                <h2 className="text-base font-medium text-gray-900 leading-tight line-clamp-2">
-                  {product.name}
-                </h2>
-
-                <p className="text-sm text-gray-500 mt-1">Rs. {product.price}</p>
-
-                <p className="mt-3 text-xs tracking-wide text-gray-400 group-hover:text-gray-600 transition">
-                  VIEW DETAILS
-                </p>
-              </div>
-            </div>
+            View All <ArrowRight size={16} />
           </Link>
-        ))}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+          {products.map((product) => (
+            <ProductCard key={product.id} {...product} />
+          ))}
+        </div>
+
+        <div className="mt-12 flex justify-center md:hidden">
+          <Link
+            href="/products"
+            className="flex items-center gap-2 text-sm font-bold border-b border-black pb-0.5"
+          >
+            View All Products <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </main>
   );
