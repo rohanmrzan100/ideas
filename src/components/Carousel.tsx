@@ -15,7 +15,7 @@ type CarouselProps = {
 
 const Carousel = ({ productImages }: CarouselProps) => {
   return (
-    <div className="relative h-125 w-125">
+    <div className="relative w-full aspect-square">
       <Swiper
         slidesPerView={1}
         spaceBetween={30}
