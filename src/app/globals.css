@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -79,6 +79,17 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* custom css */
+  /* --primary-header-font: 'Cal Sans', sans-serif; */
+  --primary-header-size: 72px;
+  --primary-header-line-height: 120%;
+  --secondary-header-size:48px;
+  --secondary-header-line-height: 120%;
+  --subtitle-size:20px;
+  --subtitle-line-height:137%;
+  --body-regular-size:16px;
+  --body-regular-line-height:137%
 }
 
 .dark {

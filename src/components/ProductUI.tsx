@@ -8,7 +8,7 @@ const ProductInformation = ({ product }: { product: Product }) => {
   const uniqueSizes = Array.from(new Set(product.product_variants.map((v) => v.size)));
 
   return (
-    <div className="flex flex-col gap-4  w-100 border border-gray-200 p-4 rounded-md bg-white shadow-sm">
+    <div className="flex flex-col gap-4  w-100  p-4 rounded-md bg-white shadow-sm">
       <div>
         <Carousel productImages={product.productImages} />
       </div>
