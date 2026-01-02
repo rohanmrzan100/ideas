@@ -1,7 +1,8 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { Geist } from 'next/font/google';
 import QueryProvider from '@/providers/QueryProviders';
+import type { Metadata } from 'next';
+import { Geist } from 'next/font/google';
+import StoreProvider from '../store/StoreProvider';
+import './globals.css';
 
 const geist = Geist({
   subsets: ['latin'],
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={geist.className}>
       <body className={`antialiased min-h-screen flex flex-col`}>
-        <QueryProvider>{children}</QueryProvider>
+        <StoreProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </StoreProvider>
       </body>
     </html>
   );

@@ -1,9 +1,20 @@
+'use client';
 import { products } from './data';
 import ProductCard from '@/components/ProductCard';
+import { useAppSelector } from '@/store/hooks';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 export default function Home() {
+  // const isAuth = useAppSelector((s) => s.app.isAuthenticated);
+  // const router = useRouter();
+  // if (isAuth) {
+  //   alert('Your session has expired!. Please signin.');
+  //   router.push('/dashboard-in');
+  // }
+
+  
   return (
     <main className="min-h-screen bg-gray-50/30 pb-20">
       {/* Product Grid Section */}

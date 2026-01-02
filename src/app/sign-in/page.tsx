@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Loader2, Phone, Lock, ArrowRight, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { BACKEND_URL } from '@/lib/constants';
+import { useAppDispatch } from '@/store/hooks';
+import { setUser } from '@/store/slices/app.slice';
 
 type SignInData = {
   phone_number: string;
@@ -23,7 +25,7 @@ export default function SignInPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<SignInData>();
-
+  const dispatch = useAppDispatch();
   const onSubmit = async (data: SignInData) => {
     setIsSubmitting(true);
     setLoginError(null);
@@ -42,12 +44,9 @@ export default function SignInPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Login failed');
       }
-
       const result = await response.json();
-
-      console.log('Login success:', result);
-
-      //   router.push('/dashboard');
+      dispatch(setUser(result.data));
+      router.push('/dashboard');
     } catch (error) {
       console.error(error);
       setLoginError(error instanceof Error ? error.message : 'Invalid credentials');

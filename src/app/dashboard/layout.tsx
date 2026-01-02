@@ -1,12 +1,54 @@
 'use client';
-import { BarChart2, Home, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
+import { Logout } from '@/api/auth';
+import { fetchMyShops } from '@/api/shop';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logout } from '@/store/slices/app.slice';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart2, Home, LogOut, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
+  const isAuth = useAppSelector((s) => s.app.isAuthenticated);
+  const isRestoringSession = useAppSelector((s) => s.app.isRestoringSession);
+  const user = useAppSelector((s) => s.app.user);
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isPending, error, data } = useQuery({
+    queryKey: [],
+    queryFn: () => fetchMyShops(),
+  });
+
+  console.log({ isPending, error, data });
+
+  useEffect(() => {
+    if (!isAuth && !isRestoringSession) {
+      router.push('/sign-in');
+    }
+  }, [isAuth, router, isRestoringSession]);
+  const handleLogout = async () => {
+    dispatch(logout());
+    await Logout();
+    router.push('/sign-in');
+  };
+  if (!isAuth && !isRestoringSession) {
+    return <>Please log in first</>;
+  }
   return (
     <div className="min-h-screen bg-[#F3F2EF] font-sans flex justify-center p-0 md:p-6">
       <div className="w-full max-w-400 flex flex-col md:flex-row gap-6">
@@ -24,8 +66,12 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                   className="object-cover"
                 />
               </div>
-              <h3 className="mt-2 font-bold text-gray-900">Modern Shop</h3>
-              <p className="text-xs text-gray-500">Authorized Seller</p>
+              {!user && <Skeleton className="h-4 w-full" />}
+              <h3 className="mt-2 font-bold text-gray-900">{user?.name}</h3>
+              <p className="text-xs text-gray-500">
+                {data && data.map((shop) => shop.name).join(',', ' || ')}
+                {!data && <Skeleton className="h-4 w-full" />}
+              </p>
             </div>
             <div className="border-t border-gray-100 p-4 bg-gray-50/50">
               <div className="flex justify-between text-sm mb-1">
@@ -80,6 +126,41 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                 href="/dashboard/settings"
                 active={isActive('/dashboard/settings')}
               />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="flex w-full items-center gap-4 px-5 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all">
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                  </button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will log you out of your account and redirect you to the sign-in page.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              {/* 
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-4 px-5 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
+              >
+                <LogOut size={20} />
+                <span>Logout</span>
+              </button> */}
             </nav>
           </div>
         </aside>

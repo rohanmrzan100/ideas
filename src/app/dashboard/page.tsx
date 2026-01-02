@@ -1,4 +1,3 @@
-
 const SellerDashboard = () => {
   return <h1>Hi</h1>;
 };
