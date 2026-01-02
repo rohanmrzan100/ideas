@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Loader2, Phone, Lock, ArrowRight, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { BACKEND_URL } from '@/lib/constants';
 import { useAppDispatch } from '@/store/hooks';
 import { setUser } from '@/store/slices/app.slice';
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, LucideIcon, Phone, Store } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 type SignInData = {
   phone_number: string;
@@ -19,6 +19,20 @@ export default function SignInPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  const [type, setType] = useState('password');
+  const [icon, setIcon] = useState<LucideIcon>(EyeOff);
+  const IconComponent = icon;
+
+  const handleToggle = () => {
+    if (type === 'password') {
+      setIcon(Eye);
+      setType('text');
+    } else {
+      setIcon(EyeOff);
+      setType('password');
+    }
+  };
 
   const {
     register,
@@ -68,7 +82,7 @@ export default function SignInPage() {
           <div className="w-12 h-12 bg-card rounded-xl shadow-sm border border-border flex items-center justify-center text-brand">
             <Store size={24} />
           </div>
-          Modern Store
+          InstaShopNepal
         </div>
 
         {/* Hero Text */}
@@ -153,17 +167,27 @@ export default function SignInPage() {
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
                   <Lock size={18} />
                 </div>
+
                 <Input
                   {...register('password', { required: 'Password is required' })}
-                  type="password"
-                  placeholder="••••••••"
-                  className={`pl-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
+                  type={type}
+                  placeholder="Password"
+                  className={`pl-10 pr-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
                     errors.password
                       ? 'border-destructive focus:border-destructive focus:ring-destructive'
                       : ''
                   }`}
                 />
+
+                <button
+                  type="button"
+                  onClick={handleToggle}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-brand transition-colors"
+                >
+                  <IconComponent size={20} />
+                </button>
               </div>
+
               {errors.password && (
                 <p className="text-destructive text-xs mt-1 font-medium">
                   {errors.password.message}
@@ -199,7 +223,7 @@ export default function SignInPage() {
           <div className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link
-              href="/auth/signup"
+              href="/signup"
               className="font-bold text-foreground hover:text-brand transition-colors underline underline-offset-4"
             >
               Sign up for free
