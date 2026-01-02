@@ -1,13 +1,13 @@
-import Link from 'next/link';
-import Image from 'next/image';
 import { Product } from '@/app/data';
 import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
-const ProductCard = ({ name, price, productImages }: Product) => {
-  const slug = name.toLowerCase().replace(/ /g, '-');
-  const originalPrice = parseInt(price) * 1.35;
+const ProductCard = ({ name, price, productImages, display_price, shop }: Product) => {
+  const slug = name.trim().toLowerCase().replace(/ /g, '-');
+  const shopName = shop.name.trim().toLowerCase().replace(/ /g, '-');
   return (
-    <Link href={`/product/${slug}`} className="group block h-full">
+    <Link href={`/${shopName}/${slug}`} className="group block h-full">
       <div className="relative flex flex-col h-full bg-white rounded-card overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-transparent hover:border-gray-100">
         {/* Image Container */}
         <div className="relative w-full aspect-4/5 bg-gray-100 overflow-hidden">
@@ -40,7 +40,7 @@ const ProductCard = ({ name, price, productImages }: Product) => {
           </h3>
           <div className="mt-auto pt-2 flex flex-col items-start justify-start">
             <p className="font-bold text-lg text-gray-900">Rs. {price}</p>
-            <span className="text-gray-400 line-through text-sm">Rs. {originalPrice}</span>
+            <span className="text-gray-400 line-through text-sm">Rs. {display_price}</span>
           </div>
         </div>
       </div>

@@ -1,14 +1,7 @@
 'use client';
 import { Logout } from '@/api/auth';
 import { fetchMyShops } from '@/api/shop';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { logout } from '@/store/slices/app.slice';
-import { useQuery } from '@tanstack/react-query';
-import { BarChart2, Home, LogOut, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import ShopSwitcher from '@/components/seller/ShopSwitcher';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +14,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logout } from '@/store/slices/app.slice';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart2, Home, LogOut, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
@@ -56,8 +57,12 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         <aside className="hidden md:flex flex-col w-80 shrink-0 gap-4">
           {/* Profile Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
-            <div className="h-16 bg-brand/10"></div>
-            <div className="px-4 pb-4 text-center -mt-8">
+            {/* Banner Image Container */}
+            <div className="relative h-24 w-full bg-gray-100">
+              <Image src="/ecommercebg.jpg" alt="banner" fill className="object-cover" priority />
+            </div>
+
+            <div className="px-4 pb-4 text-center -mt-8 relative z-10">
               <div className="relative w-16 h-16 mx-auto rounded-full border-2 border-white shadow-md overflow-hidden bg-white">
                 <Image
                   src="https://github.com/shadcn.png"
@@ -66,13 +71,13 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                   className="object-cover"
                 />
               </div>
-              {!user && <Skeleton className="h-4 w-full" />}
-              <h3 className="mt-2 font-bold text-gray-900">{user?.name}</h3>
-              <p className="text-xs text-gray-500">
-                {data && data.map((shop) => shop.name).join(',', ' || ')}
-                {!data && <Skeleton className="h-4 w-full" />}
-              </p>
+              {!user && <Skeleton className="h-4 w-full mt-2" />}
+              <h3 className="mt-2 font-bold text-gray-900 text-lg">{user?.name}</h3>
+
+              {/* Shop Switcher */}
+              <ShopSwitcher />
             </div>
+
             <div className="border-t border-gray-100 p-4 bg-gray-50/50">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Profile views</span>

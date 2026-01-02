@@ -48,7 +48,7 @@ export default function InventoryVariants({
   const handleBulkStockUpdate = () => {
     const firstStock = getValues('product_variants.0.stock');
     if (firstStock !== undefined) {
-      const updated = getValues('product_variants').map((v: any) => ({
+      const updated = getValues('product_variants').map((v: ProductVariant) => ({
         ...v,
         stock: firstStock,
       }));
@@ -133,7 +133,7 @@ export default function InventoryVariants({
                 <button
                   type="button"
                   onClick={() => remove(index)}
-                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition opacity-100 md:opacity-0 group-hover:opacity-100"
+                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition "
                   disabled={fields.length === 1}
                 >
                   <Trash2 size={16} />

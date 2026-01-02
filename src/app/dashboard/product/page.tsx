@@ -8,6 +8,8 @@ import InventoryVariants from '@/components/seller/product-form/InventoryVariant
 import ProductHeader from '@/components/seller/product-form/ProductHeader';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
 import { BACKEND_URL } from '@/lib/constants';
+import { useAppSelector } from '@/store/hooks';
+import { Loader2 } from 'lucide-react'; // Import Loader icon
 
 type ProductVariant = {
   size: string;
@@ -26,7 +28,7 @@ export type ProductFormValues = {
 
 export default function AddProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const activeShopId = useAppSelector((s) => s.app.activeShopId);
   const [productImages, setProductImages] = useState<ProductImageState[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -36,6 +38,7 @@ export default function AddProductPage() {
     handleSubmit,
     watch,
     getValues,
+    reset, // Destructure reset
     formState: { errors },
   } = useForm<ProductFormValues>({
     defaultValues: {
@@ -50,7 +53,6 @@ export default function AddProductPage() {
   const uploadFileToBackend = async (file: File, tempId: string) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('position', '1');
 
     try {
       const response = await fetch(BACKEND_URL + '/api/v1/product/upload-image', {
@@ -102,7 +104,7 @@ export default function AddProductPage() {
           id: tempId,
           file,
           previewUrl: URL.createObjectURL(file),
-          status: 'uploading', // Initial status
+          status: 'uploading',
         };
       });
 
@@ -137,7 +139,6 @@ export default function AddProductPage() {
 
     setIsSubmitting(true);
     try {
-      // 2. Map the uploaded data to the DTO format
       const finalImages = productImages.map((img, index) => ({
         url: img.serverData!.url,
         cloudinary_public_id: img.serverData!.public_id,
@@ -146,21 +147,31 @@ export default function AddProductPage() {
 
       const payload = {
         ...data,
-        shop_id: 'f9906287-ea84-4eaa-949d-a5508bc3af99',
+        shop_id: activeShopId,
         price: Number(data.price),
         display_price: data.display_price ? Number(data.display_price) : undefined,
         productImages: finalImages,
       };
 
-      console.log({ payload });
-
       const response = await fetch(BACKEND_URL + '/api/v1/product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error('Image add failed');
+
+      if (!response.ok) throw new Error('Product creation failed');
+
+      // --- Success Actions ---
       alert('Product Created Successfully!');
+
+      // 1. Reset React Hook Form fields to default
+      reset();
+
+      // 2. Clear Images and revoke URLs to prevent memory leaks
+      productImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      setProductImages([]);
+      setUploadError(null);
     } catch (error) {
       console.error(error);
       setUploadError('Failed to create product. Please try again.');
@@ -172,8 +183,16 @@ export default function AddProductPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-white md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[85vh] flex flex-col"
+      className="relative bg-white md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[85vh] flex flex-col"
     >
+      {/* --- Loading Overlay --- */}
+      {isSubmitting && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-start pt-60 bg-white/80 opacity-70">
+          <Loader2 className="h-10 w-10 animate-spin text-brand mb-4" />
+          <p className="text-gray-600 z-60 font-medium text-lg ">Creating Product...</p>
+        </div>
+      )}
+
       <ProductHeader isSubmitting={isSubmitting} />
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 h-full bg-[#F9FAFB]">

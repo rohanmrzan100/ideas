@@ -1,20 +1,11 @@
 'use client';
-import { products } from './data';
 import ProductCard from '@/components/ProductCard';
-import { useAppSelector } from '@/store/hooks';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 
 export default function Home() {
-  // const isAuth = useAppSelector((s) => s.app.isAuthenticated);
-  // const router = useRouter();
-  // if (isAuth) {
-  //   alert('Your session has expired!. Please signin.');
-  //   router.push('/dashboard-in');
-  // }
+  console.log(process.env.NODE_ENV);
 
-  
   return (
     <main className="min-h-screen bg-gray-50/30 pb-20">
       {/* Product Grid Section */}
@@ -33,9 +24,9 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-          {products.map((product) => (
+          {/* {products.map((product) => (
             <ProductCard key={product.id} {...product} />
-          ))}
+          ))} */}
         </div>
 
         <div className="mt-12 flex justify-center md:hidden">
