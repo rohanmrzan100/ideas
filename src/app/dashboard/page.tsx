@@ -18,8 +18,6 @@ const SellerDashboard = () => {
     queryFn: () => fetchShopProducts(activeShopId),
   });
 
-  console.log({ products });
-
   if (isLoading) {
     return (
       <>

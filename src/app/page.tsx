@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
-  console.log(process.env.NODE_ENV);
+  console.log(process.env.BACKEND_URL);
 
   return (
     <main className="min-h-screen bg-gray-50/30 pb-20">
