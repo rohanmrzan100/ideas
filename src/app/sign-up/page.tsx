@@ -1,5 +1,6 @@
 'use client';
 
+import Stepper, { StepItem } from '@/components/order-steps/Stepper';
 import { Input } from '@/components/ui/input';
 import { BACKEND_URL } from '@/lib/constants';
 import {
@@ -38,6 +39,7 @@ export default function SignUpPage() {
   const [signupError, setSignupError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const signupSteps: StepItem[] = [{ label: 'Personal Info' }, { label: 'Secure Password' }];
 
   const {
     register,
@@ -49,7 +51,7 @@ export default function SignUpPage() {
 
   const password = watch('password');
 
-  const totalSteps = 2;
+  const totalSteps = signupSteps.length;
 
   const handleNext = async () => {
     let fieldsToValidate: (keyof SignUpData)[] = [];
@@ -183,21 +185,8 @@ export default function SignUpPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-24 bg-background">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Progress Bar */}
-          <div className="lg:hidden">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-foreground">
-                Step {currentStep} of {totalSteps}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {Math.round((currentStep / totalSteps) * 100)}%
-              </span>
-            </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-brand transition-all duration-300"
-                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-              ></div>
-            </div>
+          <div className="lg:hidden mb-6">
+            <Stepper step={currentStep} steps={signupSteps} />
           </div>
 
           <div className="text-center lg:text-left space-y-2">

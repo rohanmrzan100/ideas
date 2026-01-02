@@ -36,6 +36,12 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       district: 'Kathmandu',
     },
   });
+  const checkoutSteps = [
+    { label: 'Product Details' },
+    { label: 'Shipping Info' },
+    { label: 'Verification' },
+    { label: 'Payment Info' },
+  ];
 
   const formData = watch();
   const uniqueColors = Array.from(new Set(product.product_variants.map((v) => v.color)));
@@ -76,7 +82,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
 
   return (
     <div className="flex flex-col h-full bg-white font-sans">
-      <Stepper step={step} />
+      <Stepper step={step} steps={checkoutSteps} />
 
       {/* --- CONTENT AREA (Split View on Desktop) --- */}
       <div className="flex-1 overflow-hidden relative">
