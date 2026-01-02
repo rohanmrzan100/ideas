@@ -23,6 +23,7 @@ export type Product = {
   id: string;
   description: string;
   price: string;
+  display_price: number | null;
   shop_id: string;
   productImages: ProductImages[];
 
@@ -278,7 +279,7 @@ export const products: Product[] = [
     open_graph_image:
       'https://res.cloudinary.com/df2zfm1f2/image/upload/v1766910385/Insta-Shop/trivhmnnmhw0mppyvcu2.jpg',
     price: '2000.00',
-    display_price: '3000.00',
+    display_price: 3000,
     product_variants: [
       {
         id: 'e25a2b9e-8f30-46ad-9f0c-331e018c2c6b',

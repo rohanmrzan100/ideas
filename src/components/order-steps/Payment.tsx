@@ -43,7 +43,7 @@ export default function Payment({ product, formData, setValue }: StepPaymentProp
         <button
           type="button"
           onClick={() => setValue('paymentMethod', 'COD')}
-          className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+          className={`p-4 rounded-md border-2 flex flex-col items-center gap-2 transition-all ${
             formData.paymentMethod === 'COD'
               ? 'border-brand bg-brand/5 text-brand'
               : 'border-gray-100 text-gray-400 hover:border-gray-200'
@@ -55,7 +55,7 @@ export default function Payment({ product, formData, setValue }: StepPaymentProp
         <button
           type="button"
           onClick={() => setValue('paymentMethod', 'QR')}
-          className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
+          className={`p-4 rounded-md border-2 flex flex-col items-center gap-2 transition-all ${
             formData.paymentMethod === 'QR'
               ? 'border-brand bg-brand/5 text-brand'
               : 'border-gray-100 text-gray-400 hover:border-gray-200'
