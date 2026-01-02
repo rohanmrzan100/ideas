@@ -58,6 +58,14 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: var(--brand-primary);
+  --primary-header-size: 72px;
+  --primary-header-line-height: 120%;
+  --secondary-header-size: 48px;
+  --secondary-header-line-height: 120%;
+  --subtitle-size: 20px;
+  --subtitle-line-height: 137%;
+  --body-regular-size: 16px;
+  --body-regular-line-height: 137%;
 }
 
 @layer base {
