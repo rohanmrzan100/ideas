@@ -1,5 +1,6 @@
 'use client';
 
+import Stepper from '@/components/order-steps/Stepper';
 import { Input } from '@/components/ui/input';
 import {
   ArrowLeft,
@@ -15,7 +16,7 @@ import {
   PhoneCall,
   Store,
   User,
-  Zap
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -220,10 +221,14 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
+      {/* Mobile Nav */}
 
       {/* RIGHT SIDE: Form */}
       <div className="w-full md:basis-[65%] flex items-start justify-center p-6 sm:p-12 md:p-24 bg-background overflow-y-auto">
         <div className="w-full max-w-2xl space-y-8">
+          <div className="lg:hidden mb-6">
+            <Stepper step={currentStep} steps={signupSteps} />
+          </div>
           <div className="text-center lg:text-left space-y-2">
             <h2 className="text-3xl font-bold text-foreground tracking-tight">Create Account</h2>
             <p className="text-muted-foreground">
