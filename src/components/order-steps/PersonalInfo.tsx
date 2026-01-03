@@ -1,7 +1,4 @@
 'use client';
-import { CheckoutFormData } from '.';
-import { FieldDescription } from '../ui/field';
-import { Input } from '../ui/input';
 import {
   Command,
   CommandEmpty,
@@ -10,29 +7,23 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check } from 'lucide-react';
-import {
-  Controller,
-  Control,
-  UseFormRegister,
-  FieldErrors,
-} from 'react-hook-form';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Control, UseFormRegister } from 'react-hook-form';
+import { CheckoutFormData } from '.';
+import { FieldDescription } from '../ui/field';
+import { Input } from '../ui/input';
 
-import type { City, Zone, Area } from '@/app/data';
-import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
 import { getAreas, getCities, getZones } from '@/api/orders';
+import type { Area, City, Zone } from '@/app/data';
+import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 type StepShippingProps = {
   register: UseFormRegister<CheckoutFormData>;
   control: Control<CheckoutFormData, unknown, CheckoutFormData>;
-  errors: FieldErrors<CheckoutFormData>;
+  // errors: FieldErrors<CheckoutFormData>;
 };
 
 export default function PersonalInfo({ register, control }: StepShippingProps) {
@@ -103,9 +94,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
       <div className="space-y-5">
         {/* Full Name */}
         <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">
-            Full Name
-          </label>
+          <label className="text-gray-700 text-sm font-medium mb-2 block">Full Name</label>
           <Input
             {...register('fullName', {
               required: 'Please enter your full name',
@@ -116,9 +105,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
 
         {/* Phone Number */}
         <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">
-            Phone Number
-          </label>
+          <label className="text-gray-700 text-sm font-medium mb-2 block">Phone Number</label>
           <Input
             {...register('phoneNumber', {
               required: true,
@@ -135,9 +122,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
 
         {/* Address Section */}
         <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">
-            Full Address
-          </label>
+          <label className="text-gray-700 text-sm font-medium mb-2 block">Full Address</label>
 
           <div className="space-y-3">
             {/* City */}
@@ -151,18 +136,14 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                     className="w-full justify-between"
                   >
                     {citiesValue
-                      ? cities.find((c) => String(c.city_id) === citiesValue)
-                          ?.city_name
+                      ? cities.find((c) => String(c.city_id) === citiesValue)?.city_name
                       : 'Select city...'}
                   </Button>
                 </PopoverTrigger>
 
                 <PopoverContent className="w-full p-0">
                   <Command>
-                    <CommandInput
-                      placeholder="Search city..."
-                      className="h-9"
-                    />
+                    <CommandInput placeholder="Search city..." className="h-9" />
                     <CommandList>
                       <CommandEmpty>No city found.</CommandEmpty>
                       <CommandGroup>
@@ -181,9 +162,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                             <Check
                               className={cn(
                                 'ml-auto',
-                                citiesValue === String(city.city_id)
-                                  ? 'opacity-100'
-                                  : 'opacity-0'
+                                citiesValue === String(city.city_id) ? 'opacity-100' : 'opacity-0',
                               )}
                             />
                           </CommandItem>
@@ -207,18 +186,14 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                       className="w-full justify-between"
                     >
                       {zonesValue
-                        ? zones.find((z) => String(z.zone_id) === zonesValue)
-                            ?.zone_name
+                        ? zones.find((z) => String(z.zone_id) === zonesValue)?.zone_name
                         : 'Select zone...'}
                     </Button>
                   </PopoverTrigger>
 
                   <PopoverContent className="w-full p-0">
                     <Command>
-                      <CommandInput
-                        placeholder="Search zone..."
-                        className="h-9"
-                      />
+                      <CommandInput placeholder="Search zone..." className="h-9" />
                       <CommandList>
                         <CommandEmpty>No zone found.</CommandEmpty>
 
@@ -238,9 +213,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                               <Check
                                 className={cn(
                                   'ml-auto',
-                                  zonesValue === String(zone.zone_id)
-                                    ? 'opacity-100'
-                                    : 'opacity-0'
+                                  zonesValue === String(zone.zone_id) ? 'opacity-100' : 'opacity-0',
                                 )}
                               />
                             </CommandItem>
@@ -265,18 +238,14 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                       className="w-full justify-between"
                     >
                       {areasValue
-                        ? areas.find((a) => String(a.area_id) === areasValue)
-                            ?.area_name
+                        ? areas.find((a) => String(a.area_id) === areasValue)?.area_name
                         : 'Select area...'}
                     </Button>
                   </PopoverTrigger>
 
                   <PopoverContent className="w-full p-0">
                     <Command>
-                      <CommandInput
-                        placeholder="Search area..."
-                        className="h-9"
-                      />
+                      <CommandInput placeholder="Search area..." className="h-9" />
                       <CommandList>
                         <CommandEmpty>No area found.</CommandEmpty>
 
@@ -295,9 +264,7 @@ export default function PersonalInfo({ register, control }: StepShippingProps) {
                               <Check
                                 className={cn(
                                   'ml-auto',
-                                  areasValue === String(area.area_id)
-                                    ? 'opacity-100'
-                                    : 'opacity-0'
+                                  areasValue === String(area.area_id) ? 'opacity-100' : 'opacity-0',
                                 )}
                               />
                             </CommandItem>

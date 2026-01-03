@@ -36,3 +36,20 @@ export type Product = {
   [key: string]: unknown;
   product_variants: ProductVariant[];
 };
+
+export type City = {
+  city_id: number;
+  city_name: string;
+};
+
+export type Zone = {
+  zone_id: number;
+  zone_name: string;
+};
+
+export type Area = {
+  area_id: number;
+  area_name: string;
+  home_delivery_available: boolean;
+  pickup_available: boolean;
+};
