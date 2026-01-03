@@ -223,7 +223,7 @@ export default function SignInPage() {
           <div className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link
-              href="/signup"
+              href="/sign-up"
               className="font-bold text-foreground hover:text-brand transition-colors underline underline-offset-4"
             >
               Sign up for free

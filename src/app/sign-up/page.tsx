@@ -1,23 +1,23 @@
 'use client';
 
-import Stepper, { StepItem } from '@/components/order-steps/Stepper';
 import { Input } from '@/components/ui/input';
-import { BACKEND_URL } from '@/lib/constants';
 import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Crown,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
   Phone,
+  PhoneCall,
   Store,
   User,
+  Zap
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -30,27 +30,88 @@ type SignUpData = {
   // Step 2: Password
   password: string;
   confirm_password: string;
+
+  // Step 3: Pricing Plan
+  plan: 'free' | 'pro' | 'enterprise';
+
+  // Step 4: Shop Details
+  shop_name: string;
+  owner_id: string;
 };
 
+const pricingPlans = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: '₹0',
+    period: 'forever',
+    icon: Store,
+    features: ['Up to 10 products', 'Basic analytics', 'Email support', '5% transaction fee'],
+    popular: false,
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '₹999',
+    period: 'per month',
+    icon: Zap,
+    features: [
+      'Unlimited products',
+      'Advanced analytics',
+      'Priority support',
+      '2% transaction fee',
+      'Custom domain',
+    ],
+    popular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: '₹2,999',
+    period: 'per month',
+    icon: Crown,
+    features: [
+      'Everything in Pro',
+      'Dedicated account manager',
+      '24/7 phone support',
+      '0% transaction fee',
+      'API access',
+      'White-label options',
+    ],
+    popular: false,
+  },
+];
+
 export default function SignUpPage() {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const signupSteps: StepItem[] = [{ label: 'Personal Info' }, { label: 'Secure Password' }];
+
+  const signupSteps = [
+    { label: 'Personal Info' },
+    { label: 'Secure Password' },
+    { label: 'Create Shop' },
+    { label: 'Choose Plan' },
+  ];
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, touchedFields },
     watch,
     trigger,
-  } = useForm<SignUpData>();
+    setValue,
+  } = useForm<SignUpData>({
+    mode: 'onTouched',
+    defaultValues: {
+      plan: 'pro',
+    },
+  });
 
   const password = watch('password');
-
+  const selectedPlan = watch('plan');
   const totalSteps = signupSteps.length;
 
   const handleNext = async () => {
@@ -60,6 +121,10 @@ export default function SignUpPage() {
       fieldsToValidate = ['name', 'email', 'phone_number'];
     } else if (currentStep === 2) {
       fieldsToValidate = ['password', 'confirm_password'];
+    } else if (currentStep === 3) {
+      fieldsToValidate = ['shop_name', 'owner_id'];
+    } else if (currentStep === 4) {
+      fieldsToValidate = ['plan'];
     }
 
     const isValid = await trigger(fieldsToValidate);
@@ -77,45 +142,29 @@ export default function SignUpPage() {
     setIsSubmitting(true);
     setSignupError(null);
 
-    // try {
-    //   const response = await fetch(`${BACKEND_URL}/api/v1/auth/sign-up(milauna baki)`, {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     credentials: 'include',
-    //     body: JSON.stringify(data),
-    //   });
+    try {
+      // Api Call garna baki
+      console.log('Sign up data:', data);
 
-    //   if (!response.ok) {
-    //     const errorData = await response.json();
-    //     throw new Error(errorData.message || 'Registration failed');
-    //   }
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    //   const result = await response.json();
-    //   console.log('Signup success:', result);
-
-    //   router.push('/dashboard');
-    // } catch (error) {
-    //   console.error(error);
-    //   setSignupError(
-    //     error instanceof Error ? error.message : 'Registration failed. Please try again.',
-    //   );
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
-    console.log(data, 'K ayo');
+      // Redirect to dashboard after successful signup
+      // router.push('/dashboard');
+    } catch (error) {
+      console.error(error);
+      setSignupError(
+        error instanceof Error ? error.message : 'Registration failed. Please try again.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen w-full flex bg-background font-sans text-foreground">
-      {/* --- LEFT SIDE: Visual/Branding (Hidden on mobile) --- */}
-      <div className="hidden lg:flex w-1/2 bg-brand/5 relative flex-col justify-between p-12 overflow-hidden border-r border-border">
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-secondary/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
-
-        {/* Logo Area */}
+      {/* LEFT SIDE: Visual/Branding */}
+      <div className="hidden lg:flex md:basis-[35%]  bg-brand/5 relative flex-col justify-between p-12 overflow-hidden border-r border-border">
         <div className="relative z-10 flex items-center gap-3 text-brand font-bold text-2xl tracking-tight">
           <div className="w-12 h-12 bg-card rounded-xl shadow-sm border border-border flex items-center justify-center text-brand">
             <Store size={24} />
@@ -123,54 +172,45 @@ export default function SignUpPage() {
           InstaShopNepal
         </div>
 
-        {/* Hero Text */}
-        <div className="relative z-10 space-y-6 max-w-lg">
-          <h1 className="text-5xl font-extrabold text-foreground leading-tight tracking-tight">
+        <div className="relative z-10 space-y-6 max-w-lg ">
+          <h1 className="w-full text-5xl font-extrabold text-foreground leading-tight tracking-tight ">
             Start your journey <br />
             <span className="text-brand">with us today.</span>
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
+
+          <p className="w-full text-lg text-muted-foreground leading-relaxed ">
             Join thousands of sellers who are growing their business with our platform. Setup takes
-            less than 2 minutes.
+            less than 5 minutes.
           </p>
 
-          {/* Progress Indicator */}
           <div className="space-y-4 pt-8">
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                  currentStep >= 1
-                    ? 'bg-brand text-brand-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {currentStep > 1 ? <Check size={20} /> : '1'}
+            {signupSteps.map((step, index) => (
+              <div key={index} className="flex items-center gap-4">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                    currentStep > index + 1
+                      ? 'bg-brand text-brand-foreground'
+                      : currentStep === index + 1
+                      ? 'bg-brand text-brand-foreground ring-4 ring-brand/20'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {currentStep > index + 1 ? <Check size={20} /> : index + 1}
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">{step.label}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {index === 0 && 'Basic details about you'}
+                    {index === 1 && 'Protect your account'}
+                    {index === 2 && 'Select your pricing tier'}
+                    {index === 3 && 'Setup your online store'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-foreground">Personal Info</p>
-                <p className="text-sm text-muted-foreground">Basic details about you</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                  currentStep >= 2
-                    ? 'bg-brand text-brand-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {currentStep > 2 ? <Check size={20} /> : '2'}
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Secure Password</p>
-                <p className="text-sm text-muted-foreground">Protect your account</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative z-10">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
@@ -181,19 +221,16 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: Form --- */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-24 bg-background">
-        <div className="w-full max-w-md space-y-8">
-          {/* Mobile Progress Bar */}
-          <div className="lg:hidden mb-6">
-            <Stepper step={currentStep} steps={signupSteps} />
-          </div>
-
+      {/* RIGHT SIDE: Form */}
+      <div className="w-full md:basis-[65%] flex items-start justify-center p-6 sm:p-12 md:p-24 bg-background overflow-y-auto">
+        <div className="w-full max-w-2xl space-y-8">
           <div className="text-center lg:text-left space-y-2">
             <h2 className="text-3xl font-bold text-foreground tracking-tight">Create Account</h2>
             <p className="text-muted-foreground">
               {currentStep === 1 && 'Tell us about yourself'}
               {currentStep === 2 && 'Create a secure password'}
+              {currentStep === 3 && 'Setup your shop'}
+              {currentStep === 4 && 'Choose your plan'}
             </p>
           </div>
 
@@ -201,7 +238,6 @@ export default function SignUpPage() {
             {/* STEP 1: Personal Info */}
             {currentStep === 1 && (
               <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
-                {/* Full Name */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground block">Full Name</label>
                   <div className="relative group">
@@ -230,7 +266,6 @@ export default function SignUpPage() {
                   )}
                 </div>
 
-                {/* Email */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground block">Email</label>
                   <div className="relative group">
@@ -259,7 +294,6 @@ export default function SignUpPage() {
                   )}
                 </div>
 
-                {/* Phone Number */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground block">
                     Phone Number
@@ -298,7 +332,6 @@ export default function SignUpPage() {
             {/* STEP 2: Password */}
             {currentStep === 2 && (
               <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
-                {/* Password */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground block">Password</label>
                   <div className="relative group">
@@ -319,9 +352,9 @@ export default function SignUpPage() {
                       })}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Create a strong password"
-                      className={`pl-10 pr-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
-                        errors.password ? 'border-destructive' : ''
-                      }`}
+                      className={`pl-10 pr-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all  ${
+                        errors.password && touchedFields.password ? 'border-destructive' : ''
+                      }}`}
                     />
                     <button
                       type="button"
@@ -331,14 +364,13 @@ export default function SignUpPage() {
                       {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                     </button>
                   </div>
-                  {errors.password && (
+                  {errors.password && touchedFields.password && (
                     <p className="text-destructive text-xs mt-1 font-medium">
                       {errors.password.message}
                     </p>
                   )}
                 </div>
 
-                {/* Confirm Password */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground block">
                     Confirm Password
@@ -355,7 +387,9 @@ export default function SignUpPage() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Re-enter your password"
                       className={`pl-10 pr-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
-                        errors.confirm_password ? 'border-destructive' : ''
+                        errors.confirm_password && touchedFields.confirm_password
+                          ? 'border-destructive'
+                          : ''
                       }`}
                     />
                     <button
@@ -366,14 +400,13 @@ export default function SignUpPage() {
                       {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                     </button>
                   </div>
-                  {errors.confirm_password && (
+                  {errors.confirm_password && touchedFields.confirm_password && (
                     <p className="text-destructive text-xs mt-1 font-medium">
                       {errors.confirm_password.message}
                     </p>
                   )}
                 </div>
 
-                {/* Password Requirements */}
                 <div className="bg-muted/30 rounded-xl p-4 space-y-2">
                   <p className="text-xs font-semibold text-foreground">Password must contain:</p>
                   <ul className="text-xs text-muted-foreground space-y-1">
@@ -394,6 +427,131 @@ export default function SignUpPage() {
                       One number
                     </li>
                   </ul>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Shop */}
+            {currentStep === 3 && (
+              <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
+                <div className="shop-name space-y-2">
+                  <label className="text-sm font-semibold text-foreground block">Shop Name</label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
+                      <Store size={18} />
+                    </div>
+                    <Input
+                      {...register('shop_name', {
+                        required: 'Shop name is required',
+                        minLength: {
+                          value: 3,
+                          message: 'Shop name must be at least 3 characters',
+                        },
+                      })}
+                      type="text"
+                      placeholder="My Awesome Shop"
+                      className={`pl-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
+                        errors.shop_name ? 'border-destructive' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.shop_name && (
+                    <p className="text-destructive text-xs mt-1 font-medium">
+                      {errors.shop_name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground block">Owner ID</label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
+                      <PhoneCall size={18} />
+                    </div>
+                    <Input
+                      {...register('owner_id', {
+                        required: 'Owner is required',
+                      })}
+                      type="text"
+                      placeholder="Owner Id"
+                      className={`pl-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
+                        errors.owner_id ? 'border-destructive' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.owner_id && (
+                    <p className="text-destructive text-xs mt-1 font-medium">
+                      {errors.owner_id.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: Pricing */}
+            {currentStep === 4 && (
+              <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                <input type="hidden" {...register('plan', { required: 'Please select a plan' })} />
+
+                <div className="grid md:grid-cols-3 gap-4 w-full">
+                  {pricingPlans.map((plan) => {
+                    const Icon = plan.icon;
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => setValue('plan', plan.id as any)}
+                        className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all hover:shadow-lg ${
+                          selectedPlan === plan.id
+                            ? 'border-brand bg-brand/5 shadow-lg scale-105'
+                            : 'border-border bg-card hover:border-brand/50'
+                        }`}
+                      >
+                        {plan.popular && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span className="bg-brand text-brand-foreground text-xs font-bold px-3 py-1 rounded-full">
+                              POPULAR
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                              selectedPlan === plan.id
+                                ? 'bg-brand text-brand-foreground'
+                                : 'bg-muted text-foreground'
+                            }`}
+                          >
+                            <Icon size={24} />
+                          </div>
+
+                          <div>
+                            <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                            <div className="mt-2">
+                              <span className="text-3xl font-extrabold text-foreground">
+                                {plan.price}
+                              </span>
+                              <span className="text-sm text-muted-foreground ml-1">
+                                /{plan.period}
+                              </span>
+                            </div>
+                          </div>
+
+                          <ul className="space-y-2">
+                            {plan.features.map((feature, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-2 text-sm text-muted-foreground"
+                              >
+                                <Check size={16} className="text-brand mt-0.5 shrink-0" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -447,7 +605,6 @@ export default function SignUpPage() {
             </div>
           </form>
 
-          {/* Sign In Link */}
           <div className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link
