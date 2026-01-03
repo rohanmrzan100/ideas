@@ -1,6 +1,5 @@
 'use client';
 import { Logout } from '@/api/auth';
-import AlertDialogBox from '@/components/AlertDialogBox';
 import ShopSwitcher from '@/components/seller/ShopSwitcher';
 import {
   AlertDialog,
