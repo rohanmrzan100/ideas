@@ -10,8 +10,8 @@ import Payment from './Payment';
 import PersonalInfo from './PersonalInfo';
 import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
+import { createOrder } from '@/api/order';
 
-// --- TYPES ---
 export type CheckoutFormData = {
   selectedSize: string;
   selectedColor: string;
@@ -40,7 +40,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
   const formData = watch();
   const uniqueColors = Array.from(new Set(product.product_variants.map((v) => v.color)));
   const uniqueSizes = Array.from(new Set(product.product_variants.map((v) => v.size)));
-  const originalPrice = parseFloat(product.price) * 1.35;
+  const originalPrice = parseFloat(product.price.toString()) * 1.35; // Fixed type safety
 
   const handleNext = async () => {
     let isValid = false;
@@ -52,11 +52,10 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       isValid = true;
     }
     if (step === 2) isValid = await trigger(['fullName', 'phoneNumber', 'district', 'location']);
-    if (step === 3) isValid = formData.otp.length >= 4;
+    if (step === 3) isValid = formData.otp.length >= 4; // Simplified OTP check
 
     if (isValid) {
       setStep((prev) => prev + 1);
-      // Only scroll to top on mobile, desktop is fixed height
       if (window.innerWidth < 768) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -67,11 +66,33 @@ const OrderingSteps = ({ product }: { product: Product }) => {
 
   const onSubmit: SubmitHandler<CheckoutFormData> = async (data) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      console.log('Final Order Data:', data);
+    try {
+      await createOrder({
+        productId: product.id,
+        shopId: product.shop_id || '',
+        variant: {
+          size: data.selectedSize,
+          color: data.selectedColor,
+        },
+        customer: {
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          district: data.district,
+          location: data.location,
+          landmark: data.landmark,
+        },
+        paymentMethod: data.paymentMethod,
+      });
+
       alert('Order Placed Successfully!');
+      // Redirect or show success state
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : 'Failed to place order');
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -81,7 +102,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       {/* --- CONTENT AREA (Split View on Desktop) --- */}
       <div className="flex-1 overflow-hidden relative">
         <div className={`h-full flex flex-col md:grid md:grid-cols-2 transition-all duration-300`}>
-          {/* LEFT SIDE: Visuals (Always visible on Desktop Step 1) */}
+          {/* LEFT SIDE: Visuals */}
           <div
             className={`${
               step === 1 ? 'block' : 'hidden md:block'
@@ -102,15 +123,11 @@ const OrderingSteps = ({ product }: { product: Product }) => {
                 originalPrice={originalPrice}
               />
             )}
-
             {step === 2 && <PersonalInfo register={register} control={control} />}
-
             {step === 3 && (
               <StepVerification register={register} phoneNumber={formData.phoneNumber} />
             )}
-
             {step === 4 && <Payment product={product} formData={formData} setValue={setValue} />}
-
             <div className="h-24"></div>
           </div>
         </div>

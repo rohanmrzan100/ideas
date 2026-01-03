@@ -1,6 +1,6 @@
 'use client';
 import { Logout } from '@/api/auth';
-import { fetchMyShops } from '@/api/shop';
+import AlertDialogBox from '@/components/AlertDialogBox';
 import ShopSwitcher from '@/components/seller/ShopSwitcher';
 import {
   AlertDialog,
@@ -16,7 +16,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/app.slice';
-import { useQuery } from '@tanstack/react-query';
 import { BarChart2, Home, LogOut, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -30,12 +29,6 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   const user = useAppSelector((s) => s.app.user);
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { isPending, error, data } = useQuery({
-    queryKey: [],
-    queryFn: () => fetchMyShops(),
-  });
-
-  console.log({ isPending, error, data });
 
   useEffect(() => {
     if (!isAuth && !isRestoringSession) {
@@ -158,6 +151,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+
               {/* 
               <button
                 onClick={handleLogout}

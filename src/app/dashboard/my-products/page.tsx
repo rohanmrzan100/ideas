@@ -1,10 +1,21 @@
 'use client';
 
+import { handleDeleteProduct } from '@/api/products';
 import { fetchShopProducts } from '@/api/shop';
 import { Product } from '@/app/data';
-import { BACKEND_URL } from '@/lib/constants';
 import { useAppSelector } from '@/store/hooks';
-import { useQuery } from '@tanstack/react-query';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   Edit,
@@ -23,6 +34,7 @@ import { useState } from 'react';
 export default function MyProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const activeShopId = useAppSelector((s) => s.app.activeShopId) ?? '';
+  const queryClient = useQueryClient();
   const {
     data: products = [],
     isLoading,
@@ -33,11 +45,21 @@ export default function MyProductsPage() {
     queryFn: () => fetchShopProducts(activeShopId),
   });
 
-  // --- Filter Logic ---
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const deleteMutation = useMutation({
+    mutationFn: handleDeleteProduct,
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ['shop-products'] });
+      alert('Deleted successfully');
+    },
+    onError: (error) => {
+      console.warn(error.message);
+      alert('Error deleting product');
+    },
+  });
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -61,29 +83,28 @@ export default function MyProductsPage() {
         <h1>No Products found in the shop. Please add some products first</h1>
       ) : (
         <>
-          {' '}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="relative w-full md:w-96">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search size={18} />
-              </div>
-              <input
-                type="text"
-                placeholder="Search products by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition text-sm"
-              />
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition bg-white">
-                <Filter size={16} />
-                Filters
-              </button>
-            </div>
-          </div>
           {/* Data Table Area */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden min-h-[400px] relative">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden min-h-100 relative">
+            <div className="bg-white p-4 rounded-xl  flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full md:w-96">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search size={18} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search products by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition text-sm"
+                />
+              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition bg-white">
+                  <Filter size={16} />
+                  Filters
+                </button>
+              </div>
+            </div>
             {/* 1. Loading State */}
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 text-gray-400">
@@ -119,7 +140,12 @@ export default function MyProductsPage() {
                     <tbody className="divide-y divide-gray-100">
                       {filteredProducts.length > 0 ? (
                         filteredProducts.map((product) => (
-                          <ProductRow key={product.id} product={product} />
+                          <ProductRow
+                            key={product.id}
+                            product={product}
+                            handleDelete={(id) => deleteMutation.mutate(id)}
+                            isDeleting={deleteMutation.isPending}
+                          />
                         ))
                       ) : (
                         <tr>
@@ -173,8 +199,15 @@ export default function MyProductsPage() {
   );
 }
 
-// --- Sub-component (Same as before) ---
-function ProductRow({ product }: { product: Product }) {
+function ProductRow({
+  product,
+  handleDelete,
+  isDeleting,
+}: {
+  product: Product;
+  handleDelete: (id: string) => void;
+  isDeleting: boolean;
+}) {
   const totalStock = product.product_variants?.reduce((acc, v) => acc + v.stock, 0) || 0;
   const variantCount = product.product_variants?.length || 0;
   const isOutOfStock = totalStock === 0;
@@ -235,15 +268,49 @@ function ProductRow({ product }: { product: Product }) {
       </td>
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-2  transition-opacity">
-          <button className="p-2 text-gray-400 hover:text-brand hover:bg-brand/5 rounded-lg transition">
+          <Link
+            href={`/dashboard/product/${product.id}/preview`}
+            className="p-2 text-gray-400 hover:text-brand hover:bg-brand/5 rounded-lg transition"
+          >
             <Eye size={18} />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+          </Link>
+          <Link
+            href={`/dashboard/product/${product.id}/edit`}
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+          >
             <Edit size={18} />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
-            <Trash2 size={18} />
-          </button>
+          </Link>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Link
+                href={`/dashboard/product/${product.id}/preview`}
+                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+              >
+                <Trash2 size={18} />
+              </Link>
+            </AlertDialogTrigger>
+
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete this product permanently.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => handleDelete(product.id)}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </td>
     </tr>
