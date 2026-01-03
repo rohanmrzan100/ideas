@@ -1,4 +1,13 @@
 'use client';
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
+import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
+
+// --- UI Components (Shadcn) ---
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Command,
   CommandEmpty,
@@ -8,287 +17,363 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Control, UseFormRegister } from 'react-hook-form';
-import { CheckoutFormData } from '.';
-import { FieldDescription } from '../ui/field';
-import { Input } from '../ui/input';
 
+// --- API & Data ---
 import { getAreas, getCities, getZones } from '@/api/orders';
-import type { Area, City, Zone } from '@/app/data';
-import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
+import { Area, City, Zone } from '@/app/data';
+import { CheckoutFormData } from '.';
 
+// --- Types ---
 type StepShippingProps = {
   register: UseFormRegister<CheckoutFormData>;
   control: Control<CheckoutFormData, unknown, CheckoutFormData>;
-  // errors: FieldErrors<CheckoutFormData>;
+  setValue: UseFormSetValue<CheckoutFormData>;
 };
 
-export default function PersonalInfo({ register, control }: StepShippingProps) {
-  const [loading, setLoading] = useState(false);
+type SelectionState = {
+  city: City | null;
+  zone: Zone | null;
+  area: Area | null;
+};
 
-  const [cities, setCities] = useState<City[]>([]);
-  const [citiesOpen, setCitiesOpen] = useState(false);
-  const [citiesValue, setCitiesValue] = useState('');
+export default function PersonalInfo({ register, setValue }: StepShippingProps) {
+  // --- Local State ---
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [zonesOpen, setZonesOpen] = useState(false);
-  const [zonesValue, setZonesValue] = useState('');
+  const [selection, setSelection] = useState<SelectionState>({
+    city: null,
+    zone: null,
+    area: null,
+  });
 
-  const [areas, setAreas] = useState<Area[]>([]);
-  const [areasOpen, setAreasOpen] = useState(false);
-  const [areasValue, setAreasValue] = useState('');
+  // --- TanStack Query Data Fetching ---
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const data = await getCities();
-        console.log(data);
-        setCities(data);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  // 1. Fetch Cities
+  const { data: cities, isLoading: loadingCities } = useQuery({
+    queryKey: ['cities'],
+    queryFn: async () => {
+      const data = await getCities();
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
 
-  useEffect(() => {
-    if (zones.length === 0) {
-      setAreas([]);
-    }
-  }, [zones]);
+  // 2. Fetch Zones
+  const { data: zones, isLoading: loadingZones } = useQuery({
+    queryKey: ['zones', selection.city?.city_id],
+    queryFn: async () => {
+      if (!selection.city) return [];
+      const data = await getZones(selection.city.city_id);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!selection.city,
+  });
 
-  async function getZonesFromCities(city_id: number) {
-    setLoading(true);
-    try {
-      const data = await getZones(city_id);
-      console.log(data);
-      setZones(data);
-      console.log(data);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // 3. Fetch Areas
+  const { data: areas, isLoading: loadingAreas } = useQuery({
+    queryKey: ['areas', selection.zone?.zone_id],
+    queryFn: async () => {
+      if (!selection.zone) return [];
+      const data = await getAreas(selection.zone.zone_id);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!selection.zone,
+  });
 
-  async function getAreasFromZones(zone_id: number) {
-    setLoading(true);
-    try {
-      const data = await getAreas(zone_id);
-      console.log(data);
-      setAreas(data);
-      console.log(data);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // --- Logic to Determine Current Step ---
+  const step = !selection.city ? 'CITY' : !selection.zone ? 'ZONE' : 'AREA';
+
+  // --- Handlers ---
+
+  const handleCitySelect = (city: City) => {
+    setSelection({ city, zone: null, area: null });
+    setSearch('');
+    setValue('district', city.city_name);
+    // Don't close; proceed to zone
+  };
+
+  const handleZoneSelect = (zone: Zone) => {
+    setSelection((prev) => ({ ...prev, zone, area: null }));
+    setSearch('');
+    // Don't close; proceed to area
+  };
+
+  const handleAreaSelect = (area: Area) => {
+    setSelection((prev) => ({ ...prev, area }));
+    setSearch('');
+    setOpen(false); // Close dropdown
+    setValue('location', area.area_name);
+  };
+
+  // Reset the entire selection
+  const handleReset = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelection({ city: null, zone: null, area: null });
+    setValue('district', '');
+    setValue('location', '');
+    setSearch('');
+    setOpen(true);
+  };
 
   return (
-    <div className="p-6 md:p-10 space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
-      <div className="text-left mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Where to ship?</h2>
+    <div className="p-6 md:p-10 space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-extrabold text-gray-900">Shipping Details</h2>
+        <p className="text-gray-500">Where should we deliver your order?</p>
       </div>
 
-      <div className="space-y-5">
-        {/* Full Name */}
-        <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">Full Name</label>
-          <Input
-            {...register('fullName', {
-              required: 'Please enter your full name',
-            })}
-            className="px-4 h-12 rounded-button bg-gray-50 border-transparent focus:bg-white focus:border-brand  transition-all focus:ring-0 focus-visible:ring-0"
-          />
-        </div>
-
-        {/* Phone Number */}
-        <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">Phone Number</label>
-          <Input
-            {...register('phoneNumber', {
-              required: true,
-              pattern: /^[0-9]{10}$/,
-            })}
-            placeholder="98XXXXXXXX"
-            type="number"
-            className="px-4 h-12 rounded-button bg-gray-50 border-transparent focus:bg-white focus:border-brand transition-all focus:ring-0 focus-visible:ring-0"
-          />{' '}
-          <FieldDescription className="ml-1.5 italic">
-            We will sms / call you to confirm your order
-          </FieldDescription>
-        </div>
-
-        {/* Address Section */}
-        <div>
-          <label className="text-gray-700 text-sm font-medium mb-2 block">Full Address</label>
-
-          <div className="space-y-3">
-            {/* City */}
-            <div className="w-full">
-              <Popover open={citiesOpen} onOpenChange={setCitiesOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={citiesOpen}
-                    className="w-full justify-between"
-                  >
-                    {citiesValue
-                      ? cities.find((c) => String(c.city_id) === citiesValue)?.city_name
-                      : 'Select city...'}
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent className="w-full p-0">
-                  <Command>
-                    <CommandInput placeholder="Search city..." className="h-9" />
-                    <CommandList>
-                      <CommandEmpty>No city found.</CommandEmpty>
-                      <CommandGroup>
-                        {cities.map((city) => (
-                          <CommandItem
-                            key={city.city_id}
-                            value={String(city.city_name)}
-                            onSelect={() => {
-                              setCitiesValue(String(city.city_id)); // keep storing ID (if you want)
-                              setCitiesOpen(false);
-                              getZonesFromCities(city.city_id);
-                            }}
-                          >
-                            {city.city_name}
-
-                            <Check
-                              className={cn(
-                                'ml-auto',
-                                citiesValue === String(city.city_id) ? 'opacity-100' : 'opacity-0',
-                              )}
-                            />
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+      <div className="space-y-6">
+        {/* --- Contact Section --- */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">
+            Contact
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="relative group">
+              <User
+                className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
+                size={18}
+              />
+              <Input
+                {...register('fullName', { required: true })}
+                placeholder="Full Name"
+                className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all"
+              />
             </div>
+            <div className="relative group">
+              <Phone
+                className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
+                size={18}
+              />
+              <Input
+                {...register('phoneNumber', { required: true, pattern: /^[0-9]{10}$/ })}
+                placeholder="Mobile Number"
+                type="tel"
+                className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all"
+              />
+            </div>
+          </div>
+        </div>
 
-            {/* Zone */}
-            {zones.length > 0 && (
-              <div className="w-full">
-                <Popover open={zonesOpen} onOpenChange={setZonesOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={zonesOpen}
-                      className="w-full justify-between"
+        {/* --- Address Section --- */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">
+            Address
+          </h3>
+
+          <div className="flex flex-col gap-4">
+            {/* --- CASCADING LOCATION SELECTOR --- */}
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <div
+                  role="combobox"
+                  aria-expanded={open}
+                  className="flex min-h-[50px] w-full cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm hover:bg-gray-100 hover:border-gray-300 transition-all"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <MapPin className="mr-2 h-5 w-5 text-gray-400" />
+
+                    {!selection.city && (
+                      <span className="text-gray-500 text-base">Select City...</span>
+                    )}
+
+                    {/* 1. City (Always Show if selected) */}
+                    {selection.city && (
+                      <span className="font-medium text-gray-900">{selection.city.city_name}</span>
+                    )}
+
+                    {/* 2. Zone (Hide if same name as City) */}
+                    {selection.zone && selection.zone.zone_name !== selection.city?.city_name && (
+                      <div className="flex items-center gap-1">
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium text-gray-900">
+                          {selection.zone.zone_name}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 3. Area (Hide if same name as Zone or City) */}
+                    {selection.area && (
+                      <>
+                        {selection.area.area_name !== selection.zone?.zone_name &&
+                          selection.area.area_name !== selection.city?.city_name && (
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          )}
+                        <span className="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">
+                          {selection.area.area_name}
+                        </span>
+                      </>
+                    )}
+
+                    {/* Prompt for next step */}
+                    {selection.city && !selection.area && (
+                      <span className="text-gray-400 italic flex items-center">
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        {selection.zone ? 'Select Area...' : 'Select Zone...'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Reset Button (X) or Dropdown Arrow */}
+                  {selection.city ? (
+                    <div
+                      onClick={handleReset}
+                      className="p-1 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
                     >
-                      {zonesValue
-                        ? zones.find((z) => String(z.zone_id) === zonesValue)?.zone_name
-                        : 'Select zone...'}
-                    </Button>
-                  </PopoverTrigger>
+                      <X size={16} />
+                    </div>
+                  ) : (
+                    <ChevronDownIcon />
+                  )}
+                </div>
+              </PopoverTrigger>
 
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search zone..." className="h-9" />
-                      <CommandList>
-                        <CommandEmpty>No zone found.</CommandEmpty>
+              <PopoverContent className="w-[340px] p-0 rounded-xl shadow-lg" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder={
+                      step === 'CITY'
+                        ? 'Search city...'
+                        : step === 'ZONE'
+                        ? 'Search zone...'
+                        : 'Search area...'
+                    }
+                    value={search}
+                    onValueChange={setSearch}
+                    className="h-11"
+                  />
+                  <CommandList className="max-h-[300px]">
+                    {/* Loading State */}
+                    {(loadingCities || loadingZones || loadingAreas) && (
+                      <div className="flex items-center justify-center py-6 text-brand">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        Loading...
+                      </div>
+                    )}
 
-                        <CommandGroup>
-                          {zones.map((zone) => (
+                    {/* Empty State */}
+                    {!loadingCities && !loadingZones && !loadingAreas && (
+                      <CommandEmpty>No results found.</CommandEmpty>
+                    )}
+
+                    {/* STEP 1: CITIES */}
+                    {step === 'CITY' && !loadingCities && (
+                      <CommandGroup heading="Select City">
+                        {cities
+                          ?.filter((c) => c.city_name.toLowerCase().includes(search.toLowerCase()))
+                          .map((city) => (
                             <CommandItem
-                              key={zone.zone_id}
-                              value={String(zone.zone_name)}
-                              onSelect={() => {
-                                setZonesValue(String(zone.zone_id)); // store zone id
-                                setZonesOpen(false);
-                                getAreasFromZones(zone.zone_id);
-                              }}
+                              key={city.city_id}
+                              value={city.city_name}
+                              onSelect={() => handleCitySelect(city)}
+                              className="py-3 cursor-pointer"
                             >
-                              {zone.zone_name}
-
-                              <Check
-                                className={cn(
-                                  'ml-auto',
-                                  zonesValue === String(zone.zone_id) ? 'opacity-100' : 'opacity-0',
-                                )}
-                              />
+                              <span>{city.city_name}</span>
+                              <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
                             </CommandItem>
                           ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+                      </CommandGroup>
+                    )}
 
-            {/* Area */}
-            {areas.length > 0 && (
-              <div className="w-full">
-                <Popover open={areasOpen} onOpenChange={setAreasOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={areasOpen}
-                      className="w-full justify-between"
-                    >
-                      {areasValue
-                        ? areas.find((a) => String(a.area_id) === areasValue)?.area_name
-                        : 'Select area...'}
-                    </Button>
-                  </PopoverTrigger>
+                    {/* STEP 2: ZONES */}
+                    {step === 'ZONE' && !loadingZones && (
+                      <CommandGroup heading={`${selection.city?.city_name} > Select Zone`}>
+                        {zones && zones.length > 0 ? (
+                          zones
+                            .filter((z) => z.zone_name.toLowerCase().includes(search.toLowerCase()))
+                            .map((zone) => (
+                              <CommandItem
+                                key={zone.zone_id}
+                                value={zone.zone_name}
+                                onSelect={() => handleZoneSelect(zone)}
+                                className="py-3 cursor-pointer"
+                              >
+                                <span>{zone.zone_name}</span>
+                                <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
+                              </CommandItem>
+                            ))
+                        ) : (
+                          /* FALLBACK: If no zones, use City Name as Zone */
+                          <CommandItem
+                            value={selection.city!.city_name}
+                            onSelect={() =>
+                              handleZoneSelect({
+                                zone_id: selection.city!.city_id,
+                                zone_name: selection.city!.city_name,
+                              } as Zone)
+                            }
+                            className="py-3 cursor-pointer font-medium"
+                          >
+                            <span>{selection.city?.city_name}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    )}
 
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search area..." className="h-9" />
-                      <CommandList>
-                        <CommandEmpty>No area found.</CommandEmpty>
+                    {/* STEP 3: AREAS */}
+                    {step === 'AREA' && !loadingAreas && (
+                      <CommandGroup heading={`${selection.zone?.zone_name} > Select Area`}>
+                        {areas && areas.length > 0 ? (
+                          areas
+                            .filter((a) => a.area_name.toLowerCase().includes(search.toLowerCase()))
+                            .map((area) => (
+                              <CommandItem
+                                key={area.area_id}
+                                value={area.area_name}
+                                onSelect={() => handleAreaSelect(area)}
+                                className="py-3 cursor-pointer"
+                              >
+                                <span>{area.area_name}</span>
+                                <Check className="ml-auto h-4 w-4 text-brand" />
+                              </CommandItem>
+                            ))
+                        ) : (
+                          /* FALLBACK: If no Areas, use Zone Name as Area */
+                          <CommandItem
+                            value={selection.zone!.zone_name}
+                            onSelect={() =>
+                              handleAreaSelect({
+                                area_id: selection.zone!.zone_id,
+                                area_name: selection.zone!.zone_name,
+                                home_delivery_available: true, // TS FIX
+                                pickup_available: true, // TS FIX
+                              })
+                            }
+                            className="py-3 cursor-pointer font-medium"
+                          >
+                            <span>{selection.zone?.zone_name}</span>
+                            <Check className="ml-auto h-4 w-4 text-brand" />
+                          </CommandItem>
+                        )}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
-                        <CommandGroup>
-                          {areas.map((area) => (
-                            <CommandItem
-                              key={area.area_id}
-                              value={String(area.area_name)}
-                              onSelect={() => {
-                                setAreasValue(String(area.area_id)); // store area id
-                                setAreasOpen(false);
-                              }}
-                            >
-                              {area.area_name}
-
-                              <Check
-                                className={cn(
-                                  'ml-auto',
-                                  areasValue === String(area.area_id) ? 'opacity-100' : 'opacity-0',
-                                )}
-                              />
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
-            {/* Street / Landmark Input */}
-            <textarea
-              {...register('landmark')}
-              placeholder="Street Address / Landmark"
-              rows={3}
-              className="w-full px-4 py-3 rounded-button bg-gray-50 border-transparent focus:bg-white focus:border-brand transition-all outline-none resize-none text-sm placeholder:text-gray-500 focus:ring-0 focus-visible:ring-0"
-            />
-            <FieldDescription className="ml-1.5 italic">
-              We will deliver the order to this address
-            </FieldDescription>
+            {/* Detailed Address Input */}
+            <div className="relative group">
+              <MapPin
+                className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
+                size={18}
+              />
+              <textarea
+                {...register('landmark')}
+                placeholder="Detailed Address (Street / House No / Landmark)"
+                rows={3}
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none resize-none text-sm placeholder:text-gray-500"
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function ChevronDownIcon() {
+  return <ChevronRight className="rotate-90 text-gray-400 h-5 w-5" />;
 }

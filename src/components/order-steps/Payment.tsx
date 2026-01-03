@@ -1,8 +1,11 @@
+'use client';
+
 import { Product } from '@/app/data';
-import { Truck, Banknote, QrCode } from 'lucide-react';
-import { CheckoutFormData } from '.';
+import { cn } from '@/lib/utils';
+import { Banknote, CheckCircle2, LucideIcon, QrCode, ShieldCheck } from 'lucide-react';
 import { UseFormSetValue } from 'react-hook-form';
-import Image from 'next/image';
+import { CheckoutFormData } from '.';
+import { motion } from 'framer-motion';
 
 type StepPaymentProps = {
   product: Product;
@@ -11,60 +14,100 @@ type StepPaymentProps = {
 };
 
 export default function Payment({ product, formData, setValue }: StepPaymentProps) {
-  return (
-    <div className="p-6 md:p-10 space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
-      <h2 className="text-2xl font-bold text-gray-900">Summary & Pay</h2>
+  const method = formData.paymentMethod;
 
-      <div className="bg-white border border-gray-200 shadow-sm rounded-card p-4 flex gap-4">
-        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-          <Image
-            height="300"
-            width="300"
-            src={product.productImages[0].url}
-            alt={product.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-bold text-gray-900 line-clamp-1">{product.name}</h3>
-          <p className="text-sm text-gray-500 mt-1">
-            {formData.selectedSize} • {formData.selectedColor}
-          </p>
-          <div className="flex justify-between items-center mt-3">
-            <span className="font-bold text-brand">Rs. {product.price}</span>
-            <div className="flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-700 px-2 py-1 rounded-full">
-              <Truck size={12} /> FREE
-            </div>
-          </div>
-        </div>
+  return (
+    <div className="p-6 md:p-10 space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-extrabold text-gray-900">Payment Method</h2>
+        <p className="text-gray-500">Choose how you want to pay for your order.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={() => setValue('paymentMethod', 'COD')}
-          className={`p-4 rounded-md border-2 flex flex-col items-center gap-2 transition-all ${
-            formData.paymentMethod === 'COD'
-              ? 'border-brand bg-brand/5 text-brand'
-              : 'border-gray-100 text-gray-400 hover:border-gray-200'
-          }`}
-        >
-          <Banknote size={24} />
-          <span className="font-bold text-sm">Cash on Delivery</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setValue('paymentMethod', 'QR')}
-          className={`p-4 rounded-md border-2 flex flex-col items-center gap-2 transition-all ${
-            formData.paymentMethod === 'QR'
-              ? 'border-brand bg-brand/5 text-brand'
-              : 'border-gray-100 text-gray-400 hover:border-gray-200'
-          }`}
-        >
-          <QrCode size={24} />
-          <span className="font-bold text-sm">Pay with QR</span>
-        </button>
+      <div className="space-y-4">
+        <PaymentOption
+          id="COD"
+          label="Cash on Delivery"
+          icon={Banknote}
+          description="Pay in cash when the order arrives at your doorstep."
+          isSelected={method === 'COD'}
+          onSelect={() => setValue('paymentMethod', 'COD')}
+        />
+        <PaymentOption
+          id="QR"
+          label="Pay with QR"
+          icon={QrCode}
+          description="Scan and pay instantly using your favorite banking app."
+          isSelected={method === 'QR'}
+          onSelect={() => setValue('paymentMethod', 'QR')}
+        />
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-xl flex gap-3 items-start border border-gray-100">
+        <ShieldCheck className="text-green-600 shrink-0 mt-0.5" size={20} />
+        <div className="text-sm">
+          <p className="font-bold text-gray-900">Payment Protection</p>
+          <p className="text-gray-500 mt-0.5">
+            Your payment information is handled securely. We do not store your card details.
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
+type PaymentOptionProps = {
+  id: 'COD' | 'QR';
+  label: string;
+  icon: LucideIcon;
+  description: string;
+  isSelected: boolean;
+  onSelect: () => void;
+};
+
+const PaymentOption = ({
+  id,
+  label,
+  icon: Icon,
+  description,
+  isSelected,
+  onSelect,
+}: PaymentOptionProps) => (
+  <motion.button
+    type="button"
+    whileTap={{ scale: 0.98 }}
+    onClick={onSelect}
+    className={cn(
+      'relative w-full p-5 rounded-2xl border-2 text-left transition-colors duration-200 flex items-start gap-4 group',
+      isSelected
+        ? 'border-brand bg-brand/5 shadow-md'
+        : 'border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50',
+    )}
+  >
+    <div
+      className={cn(
+        'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+        isSelected ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200',
+      )}
+    >
+      <Icon size={24} />
+    </div>
+
+    <div className="flex-1">
+      <div className="flex justify-between items-center">
+        <h3 className={cn('font-bold text-base', isSelected ? 'text-brand' : 'text-gray-900')}>
+          {label}
+        </h3>
+        {isSelected && (
+          <motion.div
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          >
+            <CheckCircle2 size={20} className="text-brand" />
+          </motion.div>
+        )}
+      </div>
+      <p className="text-sm text-gray-500 mt-1">{description}</p>
+    </div>
+  </motion.button>
+);

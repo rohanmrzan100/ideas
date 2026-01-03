@@ -1,6 +1,9 @@
 'use client';
 
+import { createOrder } from '@/api/order';
 import { Product } from '@/app/data';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
+import { ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import Carousel from '../Carousel';
@@ -10,7 +13,6 @@ import Payment from './Payment';
 import PersonalInfo from './PersonalInfo';
 import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
-import { createOrder } from '@/api/order';
 
 export type CheckoutFormData = {
   selectedSize: string;
@@ -24,9 +26,17 @@ export type CheckoutFormData = {
   paymentMethod: 'COD' | 'QR';
 };
 
+// Fix: Explicitly type this as Variants to prevent string widening issues
+const stepVariants: Variants = {
+  initial: { opacity: 0, x: 20 },
+  animate: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  exit: { opacity: 0, x: -20, transition: { duration: 0.2 } },
+};
+
 const OrderingSteps = ({ product }: { product: Product }) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
 
   const { register, control, handleSubmit, watch, setValue, trigger } = useForm<CheckoutFormData>({
     defaultValues: {
@@ -36,17 +46,18 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       district: 'Kathmandu',
     },
   });
+
   const checkoutSteps = [
-    { label: 'Product Details' },
-    { label: 'Shipping Info' },
-    { label: 'Verification' },
-    { label: 'Payment Info' },
+    { label: 'Selection' },
+    { label: 'Shipping' },
+    { label: 'Verify' },
+    { label: 'Payment' },
   ];
 
   const formData = watch();
   const uniqueColors = Array.from(new Set(product.product_variants.map((v) => v.color)));
   const uniqueSizes = Array.from(new Set(product.product_variants.map((v) => v.size)));
-  const originalPrice = parseFloat(product.price.toString()) * 1.35; // Fixed type safety
+  const originalPrice = parseFloat(product.price.toString()) * 1.35;
 
   const handleNext = async () => {
     let isValid = false;
@@ -58,13 +69,11 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       isValid = true;
     }
     if (step === 2) isValid = await trigger(['fullName', 'phoneNumber', 'district', 'location']);
-    if (step === 3) isValid = formData.otp.length >= 4; // Simplified OTP check
+    if (step === 3) isValid = formData.otp.length >= 4;
 
     if (isValid) {
       setStep((prev) => prev + 1);
-      if (window.innerWidth < 768) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -76,10 +85,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       await createOrder({
         productId: product.id,
         shopId: product.shop_id || '',
-        variant: {
-          size: data.selectedSize,
-          color: data.selectedColor,
-        },
+        variant: { size: data.selectedSize, color: data.selectedColor },
         customer: {
           fullName: data.fullName,
           phoneNumber: data.phoneNumber,
@@ -89,9 +95,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
         },
         paymentMethod: data.paymentMethod,
       });
-
       alert('Order Placed Successfully!');
-      // Redirect or show success state
       window.location.reload();
     } catch (error) {
       console.error(error);
@@ -102,47 +106,145 @@ const OrderingSteps = ({ product }: { product: Product }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white font-sans">
-      <Stepper step={step} steps={checkoutSteps} />
+    <div className="flex flex-col h-[100dvh] bg-gray-50 md:bg-white font-sans overflow-hidden">
+      {/* Mobile: Header & Collapsible Summary (Visible on Step 2, 3, 4) */}
+      <div className="md:hidden bg-white z-30 shadow-sm relative transition-all duration-300">
+        <Stepper step={step} steps={checkoutSteps} />
 
-      {/* --- CONTENT AREA (Split View on Desktop) --- */}
+        {step > 1 && (
+          <div className="border-t border-gray-100">
+            <button
+              onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}
+              className="w-full px-6 py-3 flex items-center justify-between bg-gray-50/50"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <ShoppingBag size={16} />
+                <span>{isMobileSummaryOpen ? 'Hide order summary' : 'Show order summary'}</span>
+                {isMobileSummaryOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </div>
+              <span className="font-bold text-brand">Rs. {product.price}</span>
+            </button>
+
+            <motion.div
+              initial={false}
+              animate={{ height: isMobileSummaryOpen ? 'auto' : 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="px-6 py-4 bg-gray-50 flex gap-4">
+                <div className="w-16 h-16 rounded-md bg-white border border-gray-200 overflow-hidden relative shrink-0">
+                  <img
+                    src={product.productImages[0].url}
+                    alt="Product"
+                    className="object-cover w-full h-full"
+                  />
+                  <span className="absolute bottom-0 right-0 bg-brand text-white text-[10px] px-1.5 py-0.5 rounded-tl-md font-bold">
+                    1
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 line-clamp-1">{product.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.selectedSize} / {formData.selectedColor}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Standard Layout */}
+      <div className="hidden md:block">
+        <Stepper step={step} steps={checkoutSteps} />
+      </div>
+
+      {/* Content Area */}
       <div className="flex-1 overflow-hidden relative">
-        <div className={`h-full flex flex-col md:grid md:grid-cols-2 transition-all duration-300`}>
-          {/* LEFT SIDE: Visuals */}
-          <div
-            className={`${
-              step === 1 ? 'block' : 'hidden md:block'
-            } w-full h-[50vh] md:h-full bg-gray-50 relative md:border-r border-gray-100`}
+        <div className="h-full flex flex-col md:grid md:grid-cols-2">
+          {/* LEFT: Visuals (Hidden on Mobile Step > 1) */}
+          <motion.div
+            className={`
+            transition-all duration-500 ease-in-out relative bg-gray-100
+            ${
+              step === 1
+                ? 'h-[45vh] md:h-full opacity-100'
+                : 'h-0 md:h-full md:opacity-100 opacity-0 overflow-hidden'
+            }
+          `}
           >
             <Carousel productImages={product.productImages} />
-          </div>
+            {/* Mobile Gradient Overlay for Step 1 */}
+            <div className="md:hidden absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none" />
+          </motion.div>
 
-          {/* RIGHT SIDE: Interactions / Forms */}
-          <div className="flex-1 overflow-y-auto h-full bg-white relative">
-            {step === 1 && (
-              <ProductInfo
-                product={product}
-                formData={formData}
-                setValue={setValue}
-                uniqueSizes={uniqueSizes}
-                uniqueColors={uniqueColors}
-                originalPrice={originalPrice}
-              />
-            )}
-            {step === 2 && <PersonalInfo register={register} control={control} />}
-            {step === 3 && (
-              <StepVerification register={register} phoneNumber={formData.phoneNumber} />
-            )}
-            {step === 4 && <Payment product={product} formData={formData} setValue={setValue} />}
-            <div className="h-24"></div>
+          {/* RIGHT: Form Steps */}
+          <div className="flex-1 overflow-y-auto h-full bg-gray-50 md:bg-white relative">
+            <div className="min-h-full pb-32 md:pb-24">
+              <AnimatePresence mode="wait">
+                {step === 1 && (
+                  <motion.div
+                    key="step1"
+                    variants={stepVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <ProductInfo
+                      product={product}
+                      formData={formData}
+                      setValue={setValue}
+                      uniqueSizes={uniqueSizes}
+                      uniqueColors={uniqueColors}
+                      originalPrice={originalPrice}
+                    />
+                  </motion.div>
+                )}
+                {step === 2 && (
+                  <motion.div
+                    key="step2"
+                    variants={stepVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <PersonalInfo register={register} control={control} setValue={setValue} />
+                  </motion.div>
+                )}
+                {step === 3 && (
+                  <motion.div
+                    key="step3"
+                    variants={stepVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <StepVerification register={register} phoneNumber={formData.phoneNumber} />
+                  </motion.div>
+                )}
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    variants={stepVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Payment product={product} formData={formData} setValue={setValue} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
+
       <CheckoutFooter
         step={step}
         isSubmitting={isSubmitting}
         onBack={handleBack}
         onNext={step < 4 ? handleNext : handleSubmit(onSubmit)}
+        price={product.price}
       />
     </div>
   );
