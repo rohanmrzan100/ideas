@@ -320,6 +320,25 @@ export const products: Product[] = [
   },
 ];
 
-export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+export type City = {
+  city_id: number;
+  city_name: string;
+};
+
+export type Zone = {
+  zone_id: number;
+  zone_name: string;
+};
+
+export type Area = {
+  area_id: number;
+  area_name: string;
+  home_delivery_available: boolean;
+  pickup_available: boolean;
+};
+
+export async function getProductBySlug(
+  slug: string
+): Promise<Product | undefined> {
   return products.find((p) => p.name.toLowerCase().replace(/ /g, '-') === slug);
 }
