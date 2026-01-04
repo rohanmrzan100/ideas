@@ -113,7 +113,9 @@ export function OrderTable({
                         <Image
                           width={500}
                           height={500}
-                          src={order.product?.productImages[0].url}
+                          src={
+                            order.product?.productImages ? order.product?.productImages[0].url : ''
+                          }
                           alt={order.product.name}
                           className="w-full h-full object-cover"
                         />

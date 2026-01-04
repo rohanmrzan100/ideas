@@ -1,7 +1,7 @@
 'use client';
 
 import { createShop, fetchMyShops } from '@/api/shop';
-import { Shop } from '@/app/types';
+import { Shop } from '@/api/shop';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

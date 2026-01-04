@@ -1,12 +1,6 @@
 'use client';
 
-// ... imports
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
-import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Area, City, getAreas, getCities, getZones, Zone } from '@/api/orders';
 import {
   Command,
   CommandEmpty,
@@ -15,9 +9,12 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getAreas, getCities, getZones } from '@/api/orders';
-import { Area, City, Zone } from '@/app/types';
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
+import { useState } from 'react';
+import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
 
 type StepShippingProps = {

@@ -1,7 +1,6 @@
 'use client';
 
 import { createOrder } from '@/api/orders';
-import { Product } from '@/app/types';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ChevronDown, ChevronUp, Loader2, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
@@ -12,6 +11,7 @@ import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { Product } from '@/api/products';
 
 const PersonalInfo = dynamic(() => import('./PersonalInfo'), {
   loading: () => (

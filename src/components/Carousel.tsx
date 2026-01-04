@@ -7,7 +7,7 @@ import 'swiper/css/pagination';
 
 import Image from 'next/image';
 import { Pagination, Navigation } from 'swiper/modules';
-import { ProductImages } from '@/app/types';
+import { ProductImages } from '@/api/products';
 
 type CarouselProps = {
   productImages: ProductImages[];
