@@ -10,6 +10,7 @@ import ProductMedia, { ProductImageState } from '@/components/seller/product-for
 import { BACKEND_URL } from '@/lib/constants';
 import { useAppSelector } from '@/store/hooks';
 import { Loader2 } from 'lucide-react'; // Import Loader icon
+import { toast } from 'sonner';
 
 type ProductVariant = {
   size: string;
@@ -125,11 +126,11 @@ export default function AddProductPage() {
     const failed = productImages.some((img) => img.status === 'error');
 
     if (pending) {
-      alert('Please wait for images to finish uploading.');
+      toast.info('Please wait for images to finish uploading.');
       return;
     }
     if (failed) {
-      alert('Some images failed to upload. Please remove or retry them.');
+      toast.error('Some images failed to upload. Please remove or retry them.');
       return;
     }
     if (productImages.length === 0) {
@@ -162,7 +163,7 @@ export default function AddProductPage() {
       if (!response.ok) throw new Error('Product creation failed');
 
       // --- Success Actions ---
-      alert('Product Created Successfully!');
+      toast.success('Product Created Successfully!');
 
       // 1. Reset React Hook Form fields to default
       reset();

@@ -12,6 +12,7 @@ import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 const PersonalInfo = dynamic(() => import('./PersonalInfo'), {
   loading: () => (
@@ -83,7 +84,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
     let isValid = false;
     if (step === 1) {
       if (!formData.selectedSize || !formData.selectedColor) {
-        alert('Please select both size and color.');
+        toast.info('Please select both size and color.');
         return;
       }
       isValid = true;
@@ -115,11 +116,11 @@ const OrderingSteps = ({ product }: { product: Product }) => {
         },
         paymentMethod: data.paymentMethod,
       });
-      alert('Order Placed Successfully!');
+      toast.success('Order Placed Successfully!');
       window.location.reload();
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to place order');
+      toast.error(error instanceof Error ? error.message : 'Failed to place order');
     } finally {
       setIsSubmitting(false);
     }

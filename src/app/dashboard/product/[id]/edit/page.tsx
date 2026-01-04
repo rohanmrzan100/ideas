@@ -3,7 +3,6 @@
 import { fetchProductById, updateProduct } from '@/api/products';
 import { Product } from '@/app/data';
 import { BACKEND_URL } from '@/lib/constants';
-import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -13,6 +12,7 @@ import { useForm } from 'react-hook-form';
 import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
+import { toast } from 'sonner';
 import { ProductFormValues } from '../../page';
 
 export default function EditProductPage() {
@@ -89,12 +89,12 @@ export default function EditProductPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
       queryClient.invalidateQueries({ queryKey: ['shop-products'] });
-      alert('Product Updated Successfully!');
+      toast.success('Product Updated Successfully!');
       router.push('/dashboard/my-products');
     },
     onError: (error) => {
       console.error(error);
-      alert('Failed to update product');
+      toast.error('Failed to update product');
     },
   });
 
@@ -163,7 +163,7 @@ export default function EditProductPage() {
   const onSubmit = (data: ProductFormValues) => {
     const pending = productImages.some((img) => img.status === 'uploading');
     if (pending) {
-      alert('Please wait for images to finish uploading.');
+      toast.info('Please wait for images to finish uploading.');
       return;
     }
 

@@ -4,6 +4,8 @@ import { Geist } from 'next/font/google';
 import StoreProvider from '../store/StoreProvider';
 import './globals.css';
 
+import { Toaster } from 'sonner';
+
 const geist = Geist({
   subsets: ['latin'],
 });
@@ -21,7 +23,9 @@ export default function RootLayout({
     <html lang="en" className={geist.className}>
       <body className={`antialiased min-h-screen flex flex-col`}>
         <StoreProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            {children} <Toaster position="top-right" richColors />
+          </QueryProvider>
         </StoreProvider>
       </body>
     </html>
