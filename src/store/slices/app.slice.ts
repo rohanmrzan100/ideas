@@ -1,9 +1,14 @@
+import { PLAN_TYPE, ROLES, SUBSCRIPTION_STATUS } from '@/lib/enums';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface UserInfo {
   name: string;
-  role: 'seller' | 'admin';
+  role: ROLES;
   id: string;
+  plan: PLAN_TYPE;
+  subscription_status: SUBSCRIPTION_STATUS;
+  trial_ends_at?: string;
+  subscription_ends_at?: string;
 }
 
 interface AppState {
@@ -12,7 +17,6 @@ interface AppState {
   isAuthenticated: boolean;
   isRestoringSession: boolean;
 }
-
 const getPersistedShopId = (): string | null => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('activeShopId');

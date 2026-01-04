@@ -1,7 +1,7 @@
 'use client';
 
 import { fetchProductById, updateProduct } from '@/api/products';
-import { Product } from '@/app/data';
+import { Product } from '@/app/types';
 import { BACKEND_URL } from '@/lib/constants';
 import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

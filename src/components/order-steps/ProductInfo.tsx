@@ -1,4 +1,4 @@
-import { Product } from '@/app/data';
+import { Product } from '@/app/types';
 import { Check, Info } from 'lucide-react';
 import { UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';

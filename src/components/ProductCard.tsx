@@ -1,4 +1,4 @@
-import { Product } from '@/app/data';
+import { Product } from '@/app/types';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';

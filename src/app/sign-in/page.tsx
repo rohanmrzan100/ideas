@@ -59,6 +59,7 @@ export default function SignInPage() {
         throw new Error(errorData.message || 'Login failed');
       }
       const result = await response.json();
+
       dispatch(setUser(result.data));
       router.push('/dashboard');
     } catch (error) {

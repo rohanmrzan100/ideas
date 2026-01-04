@@ -2,7 +2,7 @@
 
 import { handleDeleteProduct } from '@/api/products';
 import { fetchShopProducts } from '@/api/shop';
-import { Product } from '@/app/data';
+import { Product } from '@/app/types';
 import { useAppSelector } from '@/store/hooks';
 import {
   AlertDialog,

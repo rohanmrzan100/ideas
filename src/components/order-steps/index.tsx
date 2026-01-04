@@ -1,7 +1,7 @@
 'use client';
 
-import { createOrder } from '@/api/order';
-import { Product } from '@/app/data';
+import { createOrder } from '@/api/orders';
+import { Product } from '@/app/types';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ChevronDown, ChevronUp, Loader2, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
@@ -34,19 +34,21 @@ const Payment = dynamic(() => import('./Payment'), {
     </div>
   ),
 });
+
 export type CheckoutFormData = {
   selectedSize: string;
   selectedColor: string;
   fullName: string;
   phoneNumber: string;
   district: string;
+  cityId: number; // Added
+  zoneId: number; // Added
   location: string;
   landmark?: string;
   otp: string;
   paymentMethod: 'COD' | 'QR';
 };
 
-// Fix: Explicitly type this as Variants to prevent string widening issues
 const stepVariants: Variants = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
@@ -64,6 +66,8 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       selectedColor: '',
       paymentMethod: 'COD',
       district: 'Kathmandu',
+      cityId: 0,
+      zoneId: 0,
     },
   });
 
@@ -88,7 +92,14 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       }
       isValid = true;
     }
-    if (step === 2) isValid = await trigger(['fullName', 'phoneNumber', 'district', 'location']);
+    // Validate IDs are present for city/zone
+    if (step === 2) {
+      isValid = await trigger(['fullName', 'phoneNumber', 'district', 'location']);
+      if (isValid && (!formData.cityId || !formData.zoneId)) {
+        alert('Please select a valid City and Zone from the list');
+        isValid = false;
+      }
+    }
     if (step === 3) isValid = formData.otp.length >= 4;
 
     if (isValid) {
@@ -105,11 +116,15 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       await createOrder({
         productId: product.id,
         shopId: product.shop_id || '',
+        productName: product.name, // Pass name to store in description
+        price: product.price, // Pass price
         variant: { size: data.selectedSize, color: data.selectedColor },
         customer: {
           fullName: data.fullName,
           phoneNumber: data.phoneNumber,
           district: data.district,
+          cityId: data.cityId, // Pass ID
+          zoneId: data.zoneId, // Pass ID
           location: data.location,
           landmark: data.landmark,
         },
@@ -127,7 +142,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
 
   return (
     <div className="flex flex-col h-dvh bg-gray-50 md:bg-white font-sans overflow-hidden">
-      {/* Mobile: Header & Collapsible Summary (Visible on Step 2, 3, 4) */}
+      {/* Mobile: Header & Collapsible Summary */}
       <div className="md:hidden bg-white z-30 shadow-sm relative transition-all duration-300">
         <Stepper step={step} steps={checkoutSteps} />
 
@@ -153,13 +168,15 @@ const OrderingSteps = ({ product }: { product: Product }) => {
             >
               <div className="px-6 py-4 bg-gray-50 flex gap-4">
                 <div className="w-16 h-16 rounded-md bg-white border border-gray-200 overflow-hidden relative shrink-0">
-                  <Image
-                    src={product.productImages[0].url}
-                    alt="Product"
-                    className="object-cover w-full h-full"
-                    width={500}
-                    height={500}
-                  />
+                  {product.productImages[0] && (
+                    <Image
+                      src={product.productImages[0].url}
+                      alt="Product"
+                      className="object-cover w-full h-full"
+                      width={500}
+                      height={500}
+                    />
+                  )}
                   <span className="absolute bottom-0 right-0 bg-brand text-white text-[10px] px-1.5 py-0.5 rounded-tl-md font-bold">
                     1
                   </span>
@@ -184,7 +201,6 @@ const OrderingSteps = ({ product }: { product: Product }) => {
       {/* Content Area */}
       <div className="flex-1 overflow-hidden relative">
         <div className="h-full flex flex-col md:grid md:grid-cols-2">
-          {/* LEFT: Visuals (Hidden on Mobile Step > 1) */}
           <motion.div
             className={`
             transition-all duration-500 ease-in-out relative bg-gray-100
@@ -196,7 +212,6 @@ const OrderingSteps = ({ product }: { product: Product }) => {
           `}
           >
             <Carousel productImages={product.productImages} />
-            {/* Mobile Gradient Overlay for Step 1 */}
             <div className="md:hidden absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-gray-50 to-transparent pointer-events-none" />
           </motion.div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Product } from '@/app/data';
+import { Product } from '@/app/types';
 import { cn } from '@/lib/utils';
 import { Banknote, CheckCircle2, LucideIcon, QrCode, ShieldCheck } from 'lucide-react';
 import { UseFormSetValue } from 'react-hook-form';
