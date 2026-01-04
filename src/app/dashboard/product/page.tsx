@@ -7,11 +7,12 @@ import { useAppSelector } from '@/store/hooks';
 import { BACKEND_URL } from '@/lib/constants';
 import { CheckCircle2, AlertCircle, Info, Lightbulb, Sparkles } from 'lucide-react';
 
-// Components
 import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
 import ProductHeader from '@/components/seller/product-form/ProductHeader';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
+
+import { toast } from 'sonner';
 
 // UI Components
 import {
@@ -175,6 +176,11 @@ export default function AddProductPage() {
         title: 'Upload Failed',
         message: 'Some images failed to upload. Please remove or retry them.',
       });
+      toast.info('Please wait for images to finish uploading.');
+      return;
+    }
+    if (failed) {
+      toast.error('Some images failed to upload. Please remove or retry them.');
       return;
     }
     if (productImages.length === 0) {
@@ -218,6 +224,8 @@ export default function AddProductPage() {
         title: 'Product Created!',
         message: 'Your product is now live in your store inventory.',
       });
+      // --- Success Actions ---
+      toast.success('Product Created Successfully!');
 
       // Reset
       reset();
