@@ -10,12 +10,14 @@ export type ProductVariant = {
   created_at?: string;
   updated_at?: string;
 };
+
 export type ProductImages = {
   id?: string;
   product_id?: string;
   cloudinary_public_id?: string;
   url: string;
   position: number;
+  color?: string; // <--- ADDED THIS FIELD
 };
 
 export interface Shop {
@@ -25,6 +27,7 @@ export interface Shop {
   created_at: string;
   updated_at: string;
 }
+
 export type Product = {
   name: string;
   id: string;
@@ -38,6 +41,7 @@ export type Product = {
   [key: string]: unknown;
   product_variants: ProductVariant[];
 };
+
 export async function handleDeleteProduct(id: string) {
   const response = await fetch(BACKEND_URL + '/api/v1/product/' + id, {
     method: 'DELETE',

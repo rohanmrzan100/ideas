@@ -1,162 +1,301 @@
+//
 'use client';
 
-import { AlertCircle, CheckCircle2, Loader2, UploadCloud, X } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  ChevronsUpDown,
+  ImagePlus,
+  Loader2,
+  Pipette,
+  Trash2,
+  X,
+} from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
-// Export this type so the parent component can use it
+// Declare EyeDropper API for TypeScript
+declare global {
+  interface Window {
+    EyeDropper?: new () => {
+      open: () => Promise<{ sRGBHex: string }>;
+    };
+  }
+}
+
 export type ProductImageState = {
-  id: string; // Temporary unique ID
-  file?: File; // The original file
-  previewUrl: string; // Local blob URL for immediate preview
+  id: string;
+  file?: File;
+  previewUrl: string;
   status: 'uploading' | 'success' | 'error';
+  color?: string;
   serverData?: {
-    // Data returned from your backend
     url: string;
+    public_id?: string;
   };
 };
 
 type ProductMediaProps = {
-  images: ProductImageState[]; // Changed from separate files/previews to this unified state
+  images: ProductImageState[];
   uploadError: string | null;
+  availableColors: string[];
   onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (id: string) => void;
+  onAssignColor: (id: string, color: string) => void;
 };
 
 export default function ProductMedia({
   images,
   uploadError,
+  availableColors,
   onImageSelect,
   onRemoveImage,
+  onAssignColor,
 }: ProductMediaProps) {
   return (
-    <div className="lg:col-span-4 bg-white border-l border-gray-200 p-6 md:p-8">
-      <div className="sticky top-24">
-        <h3 className="font-bold text-gray-900 mb-4 flex justify-between items-center">
-          Product Images
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-            {images.length} / 4
+    <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-gray-50/30">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Product Media</h2>
+          <p className="text-sm text-gray-500">
+            Upload high quality images. Click &quot;Tag Color&quot; to link images to variants.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'text-xs font-bold px-3 py-1.5 rounded-full border',
+              images.length === 8
+                ? 'bg-red-50 text-red-600 border-red-100'
+                : 'bg-white text-gray-600 border-gray-200',
+            )}
+          >
+            {images.length} / 8 Images
           </span>
-        </h3>
+        </div>
+      </div>
 
-        {/* Upload Input Area */}
-        <label
-          className={`
-            relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center 
-            transition-all cursor-pointer overflow-hidden group
-            ${
-              uploadError
-                ? 'border-red-300 bg-red-50'
-                : 'border-gray-300 bg-gray-50 hover:border-brand hover:bg-brand/5'
-            }
-          `}
-        >
-          <input
-            type="file"
-            multiple
-            accept="image/png, image/jpeg, image/webp"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            onChange={onImageSelect}
-            disabled={images.length >= 4} // Disable if max images reached
-          />
+      <div className="p-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {images.map((img, index) => (
+            <ImageCard
+              key={img.id}
+              img={img}
+              index={index}
+              availableColors={availableColors}
+              onRemove={() => onRemoveImage(img.id)}
+              onAssignColor={(color) => onAssignColor(img.id, color)}
+            />
+          ))}
 
-          <div className="w-14 h-14 bg-white shadow-sm border border-gray-100 text-brand rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <UploadCloud size={24} />
-          </div>
-          <p className="text-sm font-bold text-gray-900">Click to upload</p>
-          <p className="text-xs text-gray-500 mt-1 px-4">Support: PNG, JPG, WEBP (Max 800x800px)</p>
-        </label>
+          {images.length < 8 && (
+            <label
+              className={cn(
+                'relative aspect-4/5 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group bg-gray-50/50 hover:bg-brand/5',
+                uploadError ? 'border-red-300' : 'border-gray-200 hover:border-brand',
+              )}
+            >
+              <input
+                type="file"
+                multiple
+                accept="image/png, image/jpeg, image/webp"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                onChange={onImageSelect}
+                disabled={images.length >= 8}
+              />
+
+              <div className="w-16 h-16 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-brand group-hover:scale-110 transition-all mb-3">
+                <ImagePlus size={32} />
+              </div>
+              <p className="text-sm font-bold text-gray-600 group-hover:text-brand">Upload Image</p>
+              <p className="text-xs text-gray-400 mt-1">or drag & drop</p>
+            </label>
+          )}
+        </div>
 
         {uploadError && (
-          <div className="flex items-center gap-2 mt-3 text-red-600 text-xs font-bold bg-red-50 p-2 rounded-lg animate-in fade-in">
-            <AlertCircle size={14} />
+          <div className="flex items-center gap-2 mt-4 text-red-600 text-sm font-bold bg-red-50 p-4 rounded-xl animate-in fade-in border border-red-100">
+            <AlertCircle size={18} />
             {uploadError}
           </div>
         )}
+      </div>
+    </section>
+  );
+}
 
-        {/* Image Grid */}
-        <div className="mt-6 space-y-3">
-          {images.length > 0 && (
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
-              Gallery Preview
-            </p>
+function ImageCard({
+  img,
+  index,
+  availableColors,
+  onRemove,
+  onAssignColor,
+}: {
+  img: ProductImageState;
+  index: number;
+  availableColors: string[];
+  onRemove: () => void;
+  onAssignColor: (c: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const handleEyeDropper = async () => {
+    if (!window.EyeDropper) {
+      alert('EyeDropper not supported on this browser.');
+      setOpen(false);
+      return;
+    }
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const eyeDropper = new window.EyeDropper();
+      const result = await eyeDropper.open();
+      onAssignColor(result.sRGBHex);
+      setOpen(false);
+    } catch (e) {
+      console.log('EyeDropper closed');
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 group">
+      {/* 1. Image Container */}
+      <div
+        className={cn(
+          'relative aspect-4/5 bg-gray-100 rounded-xl border overflow-hidden shadow-sm transition-all group-hover:shadow-md',
+          img.status === 'error' ? 'border-red-500' : 'border-gray-200',
+          index === 0 && 'ring-2 ring-brand ring-offset-2',
+        )}
+      >
+        <Image
+          src={img.previewUrl}
+          alt="Preview"
+          fill
+          className={cn(
+            'object-cover transition-transform duration-500 group-hover:scale-105',
+            img.status === 'uploading' && 'opacity-50 blur-[1px]',
           )}
+        />
 
-          <div className="grid grid-cols-2 gap-3">
-            {images.map((img, index) => (
-              <div
-                key={img.id}
-                className={`
-                  group relative aspect-square bg-white rounded-md border shadow-sm overflow-hidden
-                  ${img.status === 'error' ? 'border-red-500' : 'border-gray-200'}
-                `}
-              >
-                <Image
-                  src={img.previewUrl}
-                  alt={`Preview ${index}`}
-                  fill
-                  className={`object-cover transition-transform group-hover:scale-105 ${
-                    img.status === 'uploading' ? 'opacity-50 blur-[2px]' : ''
-                  }`}
-                />
-
-                {/* --- Visual States --- */}
-
-                {/* 1. Uploading Spinner */}
-                {img.status === 'uploading' && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-                    <Loader2 className="animate-spin text-brand" size={24} />
-                  </div>
-                )}
-
-                {/* 2. Error State */}
-                {img.status === 'error' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50/80 z-10 text-red-600">
-                    <AlertCircle size={24} />
-                    <span className="text-[10px] font-bold mt-1">Failed</span>
-                  </div>
-                )}
-
-                {/* 3. Success (Cover Label) */}
-                {index === 0 && img.status === 'success' && (
-                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm z-10">
-                    COVER
-                  </div>
-                )}
-
-                {/* Remove Button */}
-                <button
-                  type="button"
-                  onClick={() => onRemoveImage(img.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur rounded-full text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shadow-sm transform translate-y-2 group-hover:translate-y-0 z-20"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-
-            {/* Empty Slots Placeholders */}
-            {Array.from({ length: Math.max(0, 4 - images.length) }).map((_, i) => (
-              <div
-                key={`empty-${i}`}
-                className="aspect-square bg-gray-50 rounded-md border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 gap-1"
-              >
-                <div className="w-2 h-2 rounded-full bg-gray-200" />
-              </div>
-            ))}
+        {img.status === 'uploading' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 z-10">
+            <Loader2 className="animate-spin text-white drop-shadow-md" size={32} />
           </div>
-        </div>
+        )}
 
-        <div className="mt-8 p-4 rounded-md border border-blue-100 bg-blue-50/50">
-          <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-blue-600" /> Pro Tips
-          </h4>
-          <div className="space-y-2 text-xs text-blue-800/80">
-            <p>
-              • High-res images improve conversion by <strong>40%</strong>.
-            </p>
-            <p>• Use the Bulk Generator to create all size/color combos instantly.</p>
-          </div>
-        </div>
+        {img.status === 'success' && (
+          <>
+            <button
+              onClick={onRemove}
+              type="button"
+              className="absolute top-2 right-2 p-2 bg-white/90 hover:bg-red-50 hover:text-red-600 rounded-full shadow-sm backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            >
+              <Trash2 size={16} />
+            </button>
+
+            {index === 0 && (
+              <span className="absolute top-2 left-2 px-2.5 py-1 bg-brand/90 backdrop-blur text-white text-[10px] uppercase font-bold rounded-md shadow-sm z-10">
+                Cover
+              </span>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* 2. Controls Area */}
+      <div className="relative">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full justify-between bg-white hover:bg-gray-50 border-gray-200 h-11',
+                img.color ? 'text-gray-900 border-brand/50 ring-1 ring-brand/10' : 'text-gray-500',
+              )}
+            >
+              <span className="flex items-center gap-2 truncate text-xs font-bold uppercase">
+                {img.color ? (
+                  <>
+                    <span
+                      className="w-4 h-4 rounded-full border border-gray-200 shadow-sm shrink-0"
+                      style={{ backgroundColor: img.color }}
+                    />
+                    {img.color}
+                  </>
+                ) : (
+                  <>
+                    <Pipette size={14} /> Tag Color
+                  </>
+                )}
+              </span>
+              <ChevronsUpDown size={14} className="opacity-50 ml-1" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="p-0 w-[var(--radix-popover-trigger-width)] min-w-[200px]"
+            align="start"
+            side="bottom"
+            sideOffset={8}
+            avoidCollisions={false}
+          >
+            <Command>
+              <CommandInput placeholder="Search color..." className="h-9 text-xs" />
+              <CommandList>
+                <CommandEmpty>No color found.</CommandEmpty>
+
+                <CommandGroup heading="Tools">
+                  <CommandItem onSelect={handleEyeDropper} className="cursor-pointer text-xs py-2">
+                    <Pipette className="mr-2 h-3.5 w-3.5" />
+                    Pick from Image
+                  </CommandItem>
+                  <CommandItem
+                    onSelect={() => {
+                      onAssignColor('');
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer text-xs text-red-600 py-2"
+                  >
+                    <X className="mr-2 h-3.5 w-3.5" />
+                    Clear Color
+                  </CommandItem>
+                </CommandGroup>
+
+                {availableColors.length > 0 && (
+                  <CommandGroup heading="Used in Variants">
+                    {availableColors.map((color) => (
+                      <CommandItem
+                        key={color}
+                        value={color}
+                        onSelect={() => {
+                          onAssignColor(color);
+                          setOpen(false);
+                        }}
+                        className="cursor-pointer text-xs py-2"
+                      >
+                        <div
+                          className="w-3.5 h-3.5 rounded-full border border-gray-200 mr-2"
+                          style={{ backgroundColor: color }}
+                        />
+                        {color}
+                        {img.color === color && <Check className="ml-auto h-3.5 w-3.5" />}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

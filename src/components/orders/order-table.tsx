@@ -1,6 +1,5 @@
 import { Order } from '@/api/orders';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Calendar,
   CreditCard,
@@ -26,7 +25,6 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-// FIX: Removed customer_city
 const formatFullAddress = (order: Order) => {
   return [order.customer_location, order.customer_district].filter(Boolean).join(', ');
 };
@@ -67,7 +65,7 @@ export function OrderTable({
           {orders.length > 0 ? (
             orders.map((order) => (
               <tr key={order.id} className="group hover:bg-gray-50 transition-colors text-sm">
-                {/* 1. Date (Primary Column) */}
+                {/* 1. Date */}
                 <td className="px-6 py-4 align-top">
                   <div className="flex flex-col gap-1">
                     <span className="font-medium text-gray-900 flex items-center gap-1.5">
@@ -105,7 +103,7 @@ export function OrderTable({
                   </div>
                 </td>
 
-                {/* 3. Product with Image */}
+                {/* 3. Product with Items List */}
                 <td className="px-6 py-4 align-top">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center relative">
@@ -125,29 +123,35 @@ export function OrderTable({
                     </div>
 
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 line-clamp-2 leading-tight mb-1.5">
+                      <p className="font-medium text-gray-900 line-clamp-2 leading-tight mb-2">
                         {order.product?.name || 'Unknown Product Item'}
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        {order.size && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1.5 h-5 rounded border-gray-200 bg-white font-normal text-gray-600"
-                          >
-                            {order.size}
-                          </Badge>
+                      <div className="flex flex-col gap-1.5">
+                        {order.items && order.items.length > 0 ? (
+                          order.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs">
+                              <span className="font-bold text-gray-600 bg-gray-100 px-1.5 rounded border border-gray-200">
+                                {item.quantity}x
+                              </span>
+
+                              <div className="flex items-center gap-1.5">
+                                <div
+                                  className="w-2.5 h-2.5 rounded-full border border-gray-200 shadow-sm"
+                                  style={{ backgroundColor: item.color.toLowerCase() }}
+                                />
+                                <span className="text-gray-700 capitalize">{item.color}</span>
+                                <span className="text-gray-300">/</span>
+                                <span className="text-gray-700 font-medium">{item.size}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          // Fallback for orders without parsed items (shouldn't happen with new logic)
+                          <span className="text-xs text-gray-400 italic">
+                            No variants specified
+                          </span>
                         )}
-                        {order.color && (
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
-                            <div
-                              className="w-2.5 h-2.5 rounded-full border border-gray-200 shadow-sm"
-                              style={{ backgroundColor: order.color }}
-                            />
-                            <span className="capitalize">{order.color}</span>
-                          </div>
-                        )}
-                        <span className="text-xs font-medium text-gray-400">x{order.quantity}</span>
                       </div>
                     </div>
                   </div>

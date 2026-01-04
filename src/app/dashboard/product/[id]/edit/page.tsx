@@ -3,7 +3,7 @@
 import { fetchProductById, Product, updateProduct } from '@/api/products';
 import { BACKEND_URL } from '@/lib/constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Info, Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -22,20 +22,19 @@ export default function EditProductPage() {
   const [productImages, setProductImages] = useState<ProductImageState[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // 1. Fetch Existing Data
   const { data: product, isLoading: isFetching } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => fetchProductById(productId),
     enabled: !!productId,
   });
 
-  // 2. Setup Form
   const {
     register,
     control,
     handleSubmit,
     watch,
     getValues,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<ProductFormValues>({
@@ -45,11 +44,19 @@ export default function EditProductPage() {
       price: 0,
       display_price: 0,
       product_variants: [],
-      category: 'clothing', // UI-only field required by BasicDetails component
+      category: 'clothing',
     },
   });
 
-  // 3. Populate Form when data arrives
+  // Extract unique colors for the media component
+  const variants = watch('product_variants');
+  const availableColors = Array.from(new Set(variants.map((v) => v.color).filter(Boolean)));
+
+  // Derived image colors for suggestions in InventoryVariants
+  const imageColors = Array.from(
+    new Set(productImages.map((img) => img.color).filter((c): c is string => !!c)),
+  );
+
   useEffect(() => {
     if (product) {
       reset({
@@ -57,7 +64,7 @@ export default function EditProductPage() {
         description: product.description,
         price: Number(product.price),
         display_price: product.display_price ? Number(product.display_price) : 0,
-        category: 'clothing', // Defaulting to clothing as backend doesn't store this yet
+        category: 'clothing',
         product_variants: product.product_variants.map((v) => ({
           size: v.size,
           color: v.color,
@@ -72,6 +79,7 @@ export default function EditProductPage() {
             id: img.id ?? Math.random().toString(36),
             previewUrl: img.url,
             status: 'success',
+            color: img.color || '', // Load saved color
             serverData: {
               url: img.url,
               public_id: img.cloudinary_public_id || '',
@@ -96,7 +104,6 @@ export default function EditProductPage() {
     },
   });
 
-  // --- Image Handling Logic (Reused) ---
   const uploadFileToBackend = async (file: File, tempId: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -124,7 +131,6 @@ export default function EditProductPage() {
         ),
       );
     } catch (error) {
-      console.error('Image upload failed:', error);
       setProductImages((prev) =>
         prev.map((img) => (img.id === tempId ? { ...img, status: 'error' } : img)),
       );
@@ -134,8 +140,8 @@ export default function EditProductPage() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      if (productImages.length + newFiles.length > 4) {
-        setUploadError('You can only upload up to 4 images.');
+      if (productImages.length + newFiles.length > 8) {
+        setUploadError('You can only upload up to 8 images.');
         return;
       }
       setUploadError(null);
@@ -158,6 +164,10 @@ export default function EditProductPage() {
     setProductImages((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const handleAssignColor = (id: string, color: string) => {
+    setProductImages((prev) => prev.map((img) => (img.id === id ? { ...img, color: color } : img)));
+  };
+
   const onSubmit = (data: ProductFormValues) => {
     const pending = productImages.some((img) => img.status === 'uploading');
     if (pending) {
@@ -165,13 +175,12 @@ export default function EditProductPage() {
       return;
     }
 
-    // Prepare images for DTO
     const finalImages = productImages.map((img, index) => ({
       url: img.serverData!.url,
       position: index,
+      color: img.color || undefined,
     }));
 
-    // Filter out 'category' as it's not part of the backend DTO
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { category, ...restData } = data;
 
@@ -200,9 +209,9 @@ export default function EditProductPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="relative bg-white md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[85vh] flex flex-col"
+      className="relative min-h-screen bg-gray-50/50 flex flex-col"
     >
-      {/* Header */}
+      {/* 1. Header (Sticky) */}
       <div className="px-6 py-4 md:px-8 md:py-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur z-20">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Edit Product</h1>
@@ -229,24 +238,77 @@ export default function EditProductPage() {
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 h-full bg-[#F9FAFB]">
-        <div className="lg:col-span-8 p-6 md:p-8 space-y-8 overflow-y-auto">
-          <BasicDetails register={register} errors={errors} control={control} watch={watch} />
-          <InventoryVariants
-            control={control}
-            register={register}
-            watch={watch}
-            getValues={getValues}
-          />
-        </div>
+      {/* 2. Main Content Grid */}
+      <div className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Basic Info & Media */}
+          <div className="lg:col-span-7 space-y-8">
+            <BasicDetails register={register} errors={errors} control={control} watch={watch} />
 
-        <ProductMedia
-          images={productImages}
-          uploadError={uploadError}
-          onImageSelect={handleImageSelect}
-          onRemoveImage={removeImage}
-        />
+            <SellerTip
+              icon={<Sparkles size={18} />}
+              title="Boost Your Reach"
+              description='Include keywords like "Cotton", "Oversized", or "Formal" in your title to help customers find your product 3x faster.'
+            />
+
+            <ProductMedia
+              images={productImages}
+              uploadError={uploadError}
+              availableColors={availableColors}
+              onImageSelect={handleImageSelect}
+              onRemoveImage={removeImage}
+              onAssignColor={handleAssignColor}
+            />
+
+            <SellerTip
+              icon={<Info size={18} />}
+              title="Why Tag Colors?"
+              description="Tagging colors in images links them to your inventory. When a customer selects 'Red', the preview will automatically show the red photo."
+            />
+          </div>
+
+          {/* Right Column: Inventory & Variants (Sticky) */}
+          <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-24">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <InventoryVariants
+                control={control}
+                register={register}
+                watch={watch}
+                getValues={getValues}
+                setValue={setValue}
+                suggestedColors={imageColors}
+              />
+            </div>
+
+            <SellerTip
+              icon={<Lightbulb size={18} />}
+              title="Pro Tip: Bulk Generator"
+              description="Use the generator above to create all Size x Color combinations instantly. You can edit stock for individual variants afterwards."
+            />
+          </div>
+        </div>
       </div>
     </form>
+  );
+}
+
+// --- Shared Helper Component for this page ---
+function SellerTip({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex gap-4 items-start">
+      <div className="bg-white p-2 rounded-full h-fit shadow-sm text-blue-600 shrink-0">{icon}</div>
+      <div className="space-y-1">
+        <h4 className="text-sm font-bold text-blue-900">{title}</h4>
+        <p className="text-xs text-blue-800/80 leading-relaxed">{description}</p>
+      </div>
+    </div>
   );
 }

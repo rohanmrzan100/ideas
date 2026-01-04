@@ -74,7 +74,7 @@ export default function PreviewProductPage() {
           </button>
 
           <Link
-            href={`/dashboard/product/${id}`}
+            href={`/dashboard/product/${id}/edit`}
             className="px-4 py-2 bg-brand text-white border border-gray-200 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all"
           >
             <Edit size={16} /> Edit Product
@@ -190,7 +190,10 @@ export default function PreviewProductPage() {
                         style={{ backgroundColor: color.toLowerCase() }}
                         title={color}
                       />
-                      <span className="font-semibold text-gray-900 text-sm">{color}</span>
+                      {/* FIX: Hide text if it looks like a hex code */}
+                      {!color.startsWith('#') && (
+                        <span className="font-semibold text-gray-900 text-sm">{color}</span>
+                      )}
                     </div>
 
                     {/* Sizes Grid */}

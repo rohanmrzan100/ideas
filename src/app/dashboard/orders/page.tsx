@@ -1,31 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 // API & Store
-import { fetchShopOrders, Order, OrderStatus, updateOrderStatus } from '@/api/orders';
+import { fetchShopOrders, Order } from '@/api/orders';
 import { useAppSelector } from '@/store/hooks';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 // Custom Components
-import { OrderToolbar } from '@/components/orders/order-toolbar';
 import { OrderTable } from '@/components/orders/order-table';
-import { ViewOrderDialog } from '@/components/orders/view-order-dialog';
-import { EditStatusDialog } from '@/components/orders/edit-status-dialog';
+import { OrderToolbar } from '@/components/orders/order-toolbar';
+import { OrderDetailsSheet } from '@/components/orders/OrderDetailSheet';
 
 export default function OrderPage() {
   const activeShopId = useAppSelector((s) => s.app.activeShopId) ?? '';
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Modal State
-  const [viewOrder, setViewOrder] = useState<Order | null>(null);
-  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  // Sheet State
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const queryClient = useQueryClient();
-
-  // 1. Fetch
   const {
     data: orders = [],
     isLoading,
@@ -37,27 +33,18 @@ export default function OrderPage() {
     enabled: !!activeShopId,
   });
 
-  // 2. Mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: OrderStatus }) =>
-      updateOrderStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shop-orders', activeShopId] });
-      setEditOrder(null);
-    },
-    onError: (err) => {
-      alert('Failed to update status'); // Replace with toast
-      console.error(err);
-    },
-  });
-
-  // 3. Filter Logic
+  // 2. Filter Logic
   const filteredOrders = orders.filter(
     (order: Order) =>
       order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_phone?.includes(searchTerm),
   );
+
+  const handleOpenSheet = (order: Order) => {
+    setSelectedOrder(order);
+    setIsSheetOpen(true);
+  };
 
   return (
     <div className="space-y-6 p-1">
@@ -106,27 +93,15 @@ export default function OrderPage() {
             orders={filteredOrders}
             isLoading={isLoading}
             searchTerm={searchTerm}
-            onView={setViewOrder}
-            onEdit={setEditOrder}
+            onView={handleOpenSheet} // Open the detailed sheet
+            onEdit={handleOpenSheet} // Reuse the sheet for editing too
             onClearFilter={() => setSearchTerm('')}
           />
         )}
       </div>
 
-      {/* Modals */}
-      <ViewOrderDialog
-        order={viewOrder}
-        open={!!viewOrder}
-        onOpenChange={(open) => !open && setViewOrder(null)}
-      />
-
-      <EditStatusDialog
-        order={editOrder}
-        open={!!editOrder}
-        onOpenChange={(open) => !open && setEditOrder(null)}
-        isSaving={updateStatusMutation.isPending}
-        onSave={(id, status) => updateStatusMutation.mutate({ id, status })}
-      />
+      {/* The New Detailed Sheet */}
+      <OrderDetailsSheet order={selectedOrder} open={isSheetOpen} onOpenChange={setIsSheetOpen} />
     </div>
   );
 }

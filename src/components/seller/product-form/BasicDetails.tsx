@@ -1,15 +1,8 @@
 'use client';
 
+import { Tag } from 'lucide-react';
+import { Control, FieldErrors, UseFormRegister, UseFormWatch, useWatch } from 'react-hook-form';
 import { ProductFormValues } from '@/app/dashboard/product/page';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { LayoutGrid, Tag } from 'lucide-react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 
 type BasicDetailsProps = {
   register: UseFormRegister<ProductFormValues>;
@@ -18,17 +11,24 @@ type BasicDetailsProps = {
   watch: UseFormWatch<ProductFormValues>;
 };
 
-export default function BasicDetails({ register, errors, control, watch }: BasicDetailsProps) {
-  const priceValue = watch('price');
-  const displayPriceValue = watch('display_price');
+export default function BasicDetails({ register, errors, control }: BasicDetailsProps) {
+  // 1. Use useWatch for reliable subscription to form updates
+  const priceValue = useWatch({ control, name: 'price' });
+  const displayPriceValue = useWatch({ control, name: 'display_price' });
 
+  // 2. Derive values directly during render
   const price = priceValue ? Number(priceValue) : 0;
   const displayPrice = displayPriceValue ? Number(displayPriceValue) : 0;
 
+  // 3. Calculate discount based on derived values
   const discountPercent =
     price > 0 && displayPrice > price
       ? Math.round(((displayPrice - price) / displayPrice) * 100)
       : 0;
+
+  // 4. Custom register with leading zero handling
+  const priceRegister = register('price', { required: true, min: 1 });
+  const displayPriceRegister = register('display_price');
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
@@ -82,7 +82,13 @@ export default function BasicDetails({ register, errors, control, watch }: Basic
               <input
                 type="number"
                 inputMode="numeric"
-                {...register('price', { required: true, min: 1 })}
+                {...priceRegister}
+                onChange={(e) => {
+                  if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                    e.target.value = e.target.value.replace(/^0+/, '');
+                  }
+                  priceRegister.onChange(e);
+                }}
                 className="w-full pl-9 pr-4 h-10 rounded-lg bg-white border border-gray-200 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none text-sm"
               />
             </div>
@@ -96,7 +102,7 @@ export default function BasicDetails({ register, errors, control, watch }: Basic
               </label>
 
               {discountPercent > 0 && (
-                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full animate-in zoom-in-50">
                   {discountPercent}% OFF
                 </span>
               )}
@@ -109,41 +115,16 @@ export default function BasicDetails({ register, errors, control, watch }: Basic
               <input
                 type="number"
                 inputMode="numeric"
-                {...register('display_price')}
+                {...displayPriceRegister}
+                onChange={(e) => {
+                  if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                    e.target.value = e.target.value.replace(/^0+/, '');
+                  }
+                  displayPriceRegister.onChange(e);
+                }}
                 className="w-full pl-9 pr-4 h-10 rounded-lg bg-white border border-gray-200 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none text-sm"
               />
             </div>
-          </div>
-
-          {/* Category */}
-          <div className="md:col-span-2">
-            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Category</label>
-            <Controller
-              control={control}
-              name="category"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="h-10 bg-white border-gray-200 rounded-lg text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <LayoutGrid size={14} />
-                      <SelectValue placeholder="Select a category" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="clothing">Clothing & Apparel</SelectItem>
-                    <SelectItem disabled value="electronics">
-                      Electronics
-                    </SelectItem>
-                    <SelectItem disabled value="home">
-                      Home & Living
-                    </SelectItem>
-                    <SelectItem disabled value="beauty">
-                      Beauty & Health
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
           </div>
         </div>
       </div>

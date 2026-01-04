@@ -1,17 +1,30 @@
+//
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useAppSelector } from '@/store/hooks';
+import { BACKEND_URL } from '@/lib/constants';
+import { CheckCircle2, AlertCircle, Info, Lightbulb, Sparkles } from 'lucide-react';
 
+// Components
 import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
 import ProductHeader from '@/components/seller/product-form/ProductHeader';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
-import { BACKEND_URL } from '@/lib/constants';
-import { useAppSelector } from '@/store/hooks';
-import { Loader2 } from 'lucide-react'; // Import Loader icon
 
-type ProductVariant = {
+// UI Components
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+
+export type ProductVariant = {
   size: string;
   color: string;
   stock: number;
@@ -30,7 +43,14 @@ export default function AddProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const activeShopId = useAppSelector((s) => s.app.activeShopId);
   const [productImages, setProductImages] = useState<ProductImageState[]>([]);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Dialog State
+  const [dialogState, setDialogState] = useState<{
+    open: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({ open: false, type: 'success', title: '', message: '' });
 
   const {
     register,
@@ -38,7 +58,8 @@ export default function AddProductPage() {
     handleSubmit,
     watch,
     getValues,
-    reset, // Destructure reset
+    setValue,
+    reset,
     formState: { errors },
   } = useForm<ProductFormValues>({
     defaultValues: {
@@ -46,10 +67,18 @@ export default function AddProductPage() {
       description: '',
       price: 0,
       display_price: 0,
-      product_variants: [{ size: 'M', color: 'Black', stock: 10 }],
+      product_variants: [{ size: 'Free Size', color: 'Standard', stock: 10 }],
     },
   });
 
+  // Derived state for color suggestions
+  const variants = watch('product_variants');
+  const variantColors = Array.from(new Set(variants.map((v) => v.color).filter(Boolean)));
+  const imageColors = Array.from(
+    new Set(productImages.map((img) => img.color).filter((c): c is string => !!c)),
+  );
+
+  // --- Image Handling Helpers ---
   const uploadFileToBackend = async (file: File, tempId: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -61,7 +90,6 @@ export default function AddProductPage() {
       });
 
       if (!response.ok) throw new Error('Upload failed');
-
       const result = await response.json();
 
       setProductImages((prev) =>
@@ -79,7 +107,6 @@ export default function AddProductPage() {
         ),
       );
     } catch (error) {
-      console.error('Image upload failed:', error);
       setProductImages((prev) =>
         prev.map((img) => (img.id === tempId ? { ...img, status: 'error' } : img)),
       );
@@ -90,16 +117,19 @@ export default function AddProductPage() {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
 
-      if (productImages.length + newFiles.length > 4) {
-        setUploadError('You can only upload up to 4 images.');
+      if (productImages.length + newFiles.length > 8) {
+        setDialogState({
+          open: true,
+          type: 'error',
+          title: 'Limit Reached',
+          message: 'You can only upload up to 8 images per product.',
+        });
         return;
       }
-      setUploadError(null);
 
       const newImageStates: ProductImageState[] = newFiles.map((file) => {
         const tempId = Math.random().toString(36).substring(7);
         uploadFileToBackend(file, tempId);
-
         return {
           id: tempId,
           file,
@@ -120,20 +150,40 @@ export default function AddProductPage() {
     });
   };
 
+  const handleAssignColor = (id: string, color: string) => {
+    setProductImages((prev) => prev.map((img) => (img.id === id ? { ...img, color: color } : img)));
+  };
+
+  // --- Submission Handler ---
   const onSubmit = async (data: ProductFormValues) => {
     const pending = productImages.some((img) => img.status === 'uploading');
     const failed = productImages.some((img) => img.status === 'error');
 
     if (pending) {
-      alert('Please wait for images to finish uploading.');
+      setDialogState({
+        open: true,
+        type: 'error',
+        title: 'Upload in Progress',
+        message: 'Please wait until all images have finished uploading.',
+      });
       return;
     }
     if (failed) {
-      alert('Some images failed to upload. Please remove or retry them.');
+      setDialogState({
+        open: true,
+        type: 'error',
+        title: 'Upload Failed',
+        message: 'Some images failed to upload. Please remove or retry them.',
+      });
       return;
     }
     if (productImages.length === 0) {
-      setUploadError('Please upload at least one product image.');
+      setDialogState({
+        open: true,
+        type: 'error',
+        title: 'Missing Images',
+        message: 'Please upload at least one image for your product.',
+      });
       return;
     }
 
@@ -142,6 +192,7 @@ export default function AddProductPage() {
       const finalImages = productImages.map((img, index) => ({
         url: img.serverData!.url,
         position: index,
+        color: img.color || undefined,
       }));
 
       const payload = {
@@ -161,19 +212,25 @@ export default function AddProductPage() {
 
       if (!response.ok) throw new Error('Product creation failed');
 
-      // --- Success Actions ---
-      alert('Product Created Successfully!');
+      setDialogState({
+        open: true,
+        type: 'success',
+        title: 'Product Created!',
+        message: 'Your product is now live in your store inventory.',
+      });
 
-      // 1. Reset React Hook Form fields to default
+      // Reset
       reset();
-
-      // 2. Clear Images and revoke URLs to prevent memory leaks
       productImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
       setProductImages([]);
-      setUploadError(null);
     } catch (error) {
       console.error(error);
-      setUploadError('Failed to create product. Please try again.');
+      setDialogState({
+        open: true,
+        type: 'error',
+        title: 'Creation Failed',
+        message: 'Something went wrong while saving the product. Please try again.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -182,37 +239,136 @@ export default function AddProductPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="relative bg-white md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[85vh] flex flex-col"
+      className="relative min-h-screen bg-gray-50/50 flex flex-col"
     >
-      {/* --- Loading Overlay --- */}
-      {isSubmitting && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-start pt-60 bg-white/80 opacity-70">
-          <Loader2 className="h-10 w-10 animate-spin text-brand mb-4" />
-          <p className="text-gray-600 z-60 font-medium text-lg ">Creating Product...</p>
-        </div>
-      )}
-
+      {/* 1. Header (Sticky) */}
       <ProductHeader isSubmitting={isSubmitting} />
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 h-full bg-[#F9FAFB]">
-        <div className="lg:col-span-8 p-6 md:p-8 space-y-8 overflow-y-auto">
-          <BasicDetails register={register} errors={errors} control={control} watch={watch} />
+      {/* 2. Main Content Grid */}
+      <div className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Basic Info & Media */}
+          <div className="lg:col-span-7 space-y-8">
+            {/* Basic Details */}
+            <BasicDetails register={register} errors={errors} control={control} watch={watch} />
 
-          <InventoryVariants
-            control={control}
-            register={register}
-            watch={watch}
-            getValues={getValues}
-          />
+            {/* Tip: SEO */}
+            <SellerTip
+              icon={<Sparkles size={18} />}
+              title="Boost Your Reach"
+              description='Include keywords like "Cotton", "Oversized", or "Formal" in your title to help customers find your product 3x faster.'
+            />
+
+            {/* Media */}
+            <ProductMedia
+              images={productImages}
+              uploadError={null}
+              availableColors={variantColors}
+              onImageSelect={handleImageSelect}
+              onRemoveImage={removeImage}
+              onAssignColor={handleAssignColor}
+            />
+
+            {/* Tip: Color Tagging */}
+            <SellerTip
+              icon={<Info size={18} />}
+              title="Why Tag Colors?"
+              description="Tagging colors in images links them to your inventory. When a customer selects 'Red', the preview will automatically show the red photo."
+            />
+          </div>
+
+          {/* Right Column: Inventory & Variants */}
+          <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-24">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <InventoryVariants
+                control={control}
+                register={register}
+                watch={watch}
+                getValues={getValues}
+                setValue={setValue}
+                suggestedColors={imageColors}
+              />
+            </div>
+
+            {/* Tip: Bulk Generator */}
+            <SellerTip
+              icon={<Lightbulb size={18} />}
+              title="Pro Tip: Bulk Generator"
+              description="Use the generator above to create all Size x Color combinations instantly. You can edit stock for individual variants afterwards."
+            />
+          </div>
         </div>
-
-        <ProductMedia
-          images={productImages}
-          uploadError={uploadError}
-          onImageSelect={handleImageSelect}
-          onRemoveImage={removeImage}
-        />
       </div>
+
+      {/* 3. Feedback Dialog */}
+      <Dialog
+        open={dialogState.open}
+        onOpenChange={(open) => setDialogState((prev) => ({ ...prev, open }))}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-4">
+              <div
+                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
+                  dialogState.type === 'success'
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {dialogState.type === 'success' ? (
+                  <CheckCircle2 size={24} />
+                ) : (
+                  <AlertCircle size={24} />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <DialogTitle className="text-lg">{dialogState.title}</DialogTitle>
+                <DialogDescription className="mt-1">{dialogState.message}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end gap-2 mt-4">
+            <Button
+              type="button"
+              variant={dialogState.type === 'success' ? 'outline' : 'secondary'}
+              onClick={() => setDialogState((prev) => ({ ...prev, open: false }))}
+            >
+              Close
+            </Button>
+            {dialogState.type === 'success' && (
+              <Button
+                type="button"
+                onClick={() => {
+                  setDialogState((prev) => ({ ...prev, open: false }));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                Add Another Product
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
+  );
+}
+
+function SellerTip({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex gap-4 items-start">
+      <div className="bg-white p-2 rounded-full h-fit shadow-sm text-blue-600 shrink-0">{icon}</div>
+      <div className="space-y-1">
+        <h4 className="text-sm font-bold text-blue-900">{title}</h4>
+        <p className="text-xs text-blue-800/80 leading-relaxed">{description}</p>
+      </div>
+    </div>
   );
 }
