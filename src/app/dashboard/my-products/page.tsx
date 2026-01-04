@@ -29,6 +29,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function MyProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,11 +53,11 @@ export default function MyProductsPage() {
     mutationFn: handleDeleteProduct,
     onSuccess() {
       queryClient.invalidateQueries({ queryKey: ['shop-products'] });
-      alert('Deleted successfully');
+      toast.success('Deleted successfully');
     },
     onError: (error) => {
       console.warn(error.message);
-      alert('Error deleting product');
+      toast.error('Error deleting product');
     },
   });
   return (
