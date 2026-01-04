@@ -37,7 +37,6 @@ type SignUpData = {
 
   // Step 4: Shop Details
   shop_name: string;
-  owner_id: string;
 };
 
 const pricingPlans = [
@@ -123,7 +122,7 @@ export default function SignUpPage() {
     } else if (currentStep === 2) {
       fieldsToValidate = ['password', 'confirm_password'];
     } else if (currentStep === 3) {
-      fieldsToValidate = ['shop_name', 'owner_id'];
+      fieldsToValidate = ['shop_name'];
     } else if (currentStep === 4) {
       fieldsToValidate = ['plan'];
     }
@@ -163,74 +162,71 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background font-sans text-foreground">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background font-sans">
       {/* LEFT SIDE: Visual/Branding */}
-      <div className="hidden lg:flex md:basis-[35%]  bg-brand/5 relative flex-col justify-between p-12 overflow-hidden border-r border-border">
-        <div className="relative z-10 flex items-center gap-3 text-brand font-bold text-2xl tracking-tight">
+      <div className="hidden lg:flex lg:w-[30%]  bg-brand/5 relative flex-col items-center gap-16 p-10 overflow-hidden border-r border-border">
+        <div className="relative z-10 flex items-center gap-3 text-brand font-bold text-2xl tracking-tight ">
           <div className="w-12 h-12 bg-card rounded-xl shadow-sm border border-border flex items-center justify-center text-brand">
             <Store size={24} />
           </div>
           InstaShopNepal
         </div>
 
-        <div className="relative z-10 space-y-6 max-w-lg ">
-          <h1 className="w-full text-5xl font-extrabold text-foreground leading-tight tracking-tight ">
-            Start your journey <br />
-            <span className="text-brand">with us today.</span>
+        <div className="relative z-10 space-y-6 max-w-lg flex flex-col items-center justify-center ">
+          <h1 className="w-full text-4xl font-extrabold text-foreground leading-tight tracking-tight text-center">
+            Start selling in minutes
           </h1>
 
-          <p className="w-full text-lg text-muted-foreground leading-relaxed ">
-            Join thousands of sellers who are growing their business with our platform. Setup takes
-            less than 5 minutes.
+          <p className="w-full text-base text-muted-foreground text-center">
+            Create your store and reach customers instantly.
           </p>
 
-          <div className="space-y-4 pt-8">
-            {signupSteps.map((step, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    currentStep > index + 1
-                      ? 'bg-brand text-brand-foreground'
-                      : currentStep === index + 1
-                      ? 'bg-brand text-brand-foreground ring-4 ring-brand/20'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {currentStep > index + 1 ? <Check size={20} /> : index + 1}
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{step.label}</p>
+          <ol className="relative border-s border-border text-body pt-8 space-y-6">
+            {signupSteps.map((step, index) => {
+              const stepNumber = index + 1;
+              const isCompleted = currentStep > stepNumber;
+              const isActive = currentStep === stepNumber;
+
+              return (
+                <li key={step.label} className="relative ps-12">
+                  <span
+                    className={`absolute -start-4 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-background
+            ${
+              isCompleted
+                ? 'bg-brand text-brand-foreground'
+                : isActive
+                ? 'bg-brand text-brand-foreground ring-brand/20'
+                : 'bg-muted text-muted-foreground'
+            }`}
+                  >
+                    {isCompleted ? <Check size={16} /> : stepNumber}
+                  </span>
+
+                  <h3 className="font-semibold leading-tight text-foreground">{step.label}</h3>
+
                   <p className="text-sm text-muted-foreground">
                     {index === 0 && 'Basic details about you'}
                     {index === 1 && 'Protect your account'}
-                    {index === 2 && 'Select your pricing tier'}
-                    {index === 3 && 'Setup your online store'}
+                    {index === 2 && 'Setup your online store'}
+                    {index === 3 && 'Select your pricing tier'}
                   </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/auth/signin" className="font-bold text-brand hover:underline">
-              Sign in
-            </Link>
-          </p>
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
-      {/* Mobile Nav */}
 
       {/* RIGHT SIDE: Form */}
-      <div className="w-full md:basis-[65%] flex items-start justify-center p-6 sm:p-12 md:p-24 bg-background overflow-y-auto">
-        <div className="w-full max-w-2xl space-y-8">
+      <div className="w-full lg:w-[70%] flex items-start justify-center p-4 sm:p-6 md:p-8 lg:p-16 bg-background overflow-y-auto">
+        <div className="w-full max-w-md lg:max-w-lg space-y-4 sm:space-y-6">
           <div className="lg:hidden mb-6">
             <Stepper step={currentStep} steps={signupSteps} />
           </div>
           <div className="text-center lg:text-left space-y-2">
-            <h2 className="text-3xl font-bold text-foreground tracking-tight">Create Account</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+              Create Account
+            </h2>
             <p className="text-muted-foreground">
               {currentStep === 1 && 'Tell us about yourself'}
               {currentStep === 2 && 'Create a secure password'}
@@ -239,12 +235,14 @@ export default function SignUpPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             {/* STEP 1: Personal Info */}
             {currentStep === 1 && (
               <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">Full Name</label>
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
+                    Full Name
+                  </label>
                   <div className="relative group">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
                       <User size={18} />
@@ -272,7 +270,9 @@ export default function SignUpPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">Email</label>
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
+                    Email
+                  </label>
                   <div className="relative group">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
                       <Mail size={18} />
@@ -300,7 +300,7 @@ export default function SignUpPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
                     Phone Number
                   </label>
                   <div className="relative group">
@@ -338,7 +338,9 @@ export default function SignUpPage() {
             {currentStep === 2 && (
               <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">Password</label>
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
+                    Password
+                  </label>
                   <div className="relative group">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
                       <Lock size={18} />
@@ -377,7 +379,7 @@ export default function SignUpPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
                     Confirm Password
                   </label>
                   <div className="relative group">
@@ -440,7 +442,9 @@ export default function SignUpPage() {
             {currentStep === 3 && (
               <div className="space-y-5 animate-in slide-in-from-right-4 fade-in duration-300">
                 <div className="shop-name space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">Shop Name</label>
+                  <label className="text-xs sm:text-sm font-semibold text-foreground block">
+                    Shop Name
+                  </label>
                   <div className="relative group">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
                       <Store size={18} />
@@ -463,30 +467,6 @@ export default function SignUpPage() {
                   {errors.shop_name && (
                     <p className="text-destructive text-xs mt-1 font-medium">
                       {errors.shop_name.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground block">Owner ID</label>
-                  <div className="relative group">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-brand transition-colors">
-                      <PhoneCall size={18} />
-                    </div>
-                    <Input
-                      {...register('owner_id', {
-                        required: 'Owner is required',
-                      })}
-                      type="text"
-                      placeholder="Owner Id"
-                      className={`pl-10 h-12 rounded-xl bg-muted/30 border-input focus:bg-background focus:border-brand focus:ring-1 focus:ring-brand transition-all ${
-                        errors.owner_id ? 'border-destructive' : ''
-                      }`}
-                    />
-                  </div>
-                  {errors.owner_id && (
-                    <p className="text-destructive text-xs mt-1 font-medium">
-                      {errors.owner_id.message}
                     </p>
                   )}
                 </div>
@@ -575,7 +555,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="flex-1 h-12 bg-muted text-foreground font-bold rounded-xl hover:bg-muted/80 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 h-11 sm:h-12 bg-muted text-foreground font-bold rounded-xl hover:bg-muted/80 transition-all flex items-center justify-center gap-2"
                 >
                   <ArrowLeft size={18} />
                   Back
@@ -586,7 +566,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="flex-1 h-12 bg-brand text-brand-foreground font-bold rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 h-11 sm:h-12 bg-brand text-brand-foreground font-bold rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
                 >
                   Next
                   <ArrowRight size={18} />
@@ -595,7 +575,7 @@ export default function SignUpPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-12 bg-brand text-brand-foreground font-bold rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                  className="flex-1 h-11 sm:h-12 bg-brand text-brand-foreground font-bold rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isSubmitting ? (
                     <Loader2 size={20} className="animate-spin" />
