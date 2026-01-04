@@ -13,9 +13,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDate, getPlanColor } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/app.slice';
-import { BarChart2, Home, LogOut, Package, PlusCircle, Settings, ShoppingBag } from 'lucide-react';
+import {
+  BarChart2,
+  Clock,
+  Crown,
+  Home,
+  LogOut,
+  Package,
+  PlusCircle,
+  Settings,
+  ShoppingBag,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -65,7 +76,28 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
               </div>
               {!user && <Skeleton className="h-4 w-full mt-2" />}
               <h3 className="mt-2 font-bold text-gray-900 text-lg">{user?.name}</h3>
+              {user && (
+                <div className="flex flex-col items-center gap-2 mt-2 mb-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wide ${getPlanColor(
+                      user.plan,
+                    )}`}
+                  >
+                    <Crown size={12} />
+                    {user.plan || 'Free'} Plan
+                  </span>
 
+                  {/* Show Expiry if applicable */}
+                  {(user.trial_ends_at || user.subscription_ends_at) && (
+                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
+                      <Clock size={10} />
+                      {user.subscription_status === 'trialing'
+                        ? `Trial ends ${formatDate(user.trial_ends_at ?? '')}`
+                        : `Renews ${formatDate(user.subscription_ends_at ?? '')}`}
+                    </span>
+                  )}
+                </div>
+              )}
               {/* Shop Switcher */}
               <ShopSwitcher />
             </div>

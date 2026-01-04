@@ -1,9 +1,7 @@
 'use client';
 
-import { handleDeleteProduct } from '@/api/products';
+import { handleDeleteProduct, Product } from '@/api/products';
 import { fetchShopProducts } from '@/api/shop';
-import { Product } from '@/app/data';
-import { useAppSelector } from '@/store/hooks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,

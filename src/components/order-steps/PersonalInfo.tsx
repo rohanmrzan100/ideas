@@ -1,13 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
-import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
-
-// --- UI Components (Shadcn) ---
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Area, City, getAreas, getCities, getZones, Zone } from '@/api/orders';
 import {
   Command,
   CommandEmpty,
@@ -16,14 +9,14 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-// --- API & Data ---
-import { getAreas, getCities, getZones } from '@/api/orders';
-import { Area, City, Zone } from '@/app/data';
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
+import { useState } from 'react';
+import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
 
-// --- Types ---
 type StepShippingProps = {
   register: UseFormRegister<CheckoutFormData>;
   control: Control<CheckoutFormData, unknown, CheckoutFormData>;
@@ -37,7 +30,6 @@ type SelectionState = {
 };
 
 export default function PersonalInfo({ register, setValue }: StepShippingProps) {
-  // --- Local State ---
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -47,19 +39,15 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     area: null,
   });
 
-  // --- TanStack Query Data Fetching ---
-
-  // 1. Fetch Cities
   const { data: cities, isLoading: loadingCities } = useQuery({
     queryKey: ['cities'],
     queryFn: async () => {
       const data = await getCities();
       return Array.isArray(data) ? data : [];
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10,
   });
 
-  // 2. Fetch Zones
   const { data: zones, isLoading: loadingZones } = useQuery({
     queryKey: ['zones', selection.city?.city_id],
     queryFn: async () => {
@@ -70,7 +58,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     enabled: !!selection.city,
   });
 
-  // 3. Fetch Areas
   const { data: areas, isLoading: loadingAreas } = useQuery({
     queryKey: ['areas', selection.zone?.zone_id],
     queryFn: async () => {
@@ -81,50 +68,49 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     enabled: !!selection.zone,
   });
 
-  // --- Logic to Determine Current Step ---
   const step = !selection.city ? 'CITY' : !selection.zone ? 'ZONE' : 'AREA';
-
-  // --- Handlers ---
 
   const handleCitySelect = (city: City) => {
     setSelection({ city, zone: null, area: null });
     setSearch('');
     setValue('district', city.city_name);
-    // Don't close; proceed to zone
+    setValue('cityId', city.city_id); // Capture ID
   };
 
   const handleZoneSelect = (zone: Zone) => {
     setSelection((prev) => ({ ...prev, zone, area: null }));
     setSearch('');
-    // Don't close; proceed to area
+    setValue('zoneId', zone.zone_id); // Capture ID
   };
 
   const handleAreaSelect = (area: Area) => {
     setSelection((prev) => ({ ...prev, area }));
     setSearch('');
-    setOpen(false); // Close dropdown
+    setOpen(false);
     setValue('location', area.area_name);
   };
 
-  // Reset the entire selection
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelection({ city: null, zone: null, area: null });
     setValue('district', '');
     setValue('location', '');
+    setValue('cityId', 0);
+    setValue('zoneId', 0);
     setSearch('');
     setOpen(true);
   };
 
+  // ... Rest of the JSX remains the same
   return (
     <div className="p-6 md:p-10 space-y-8">
+      {/* ... header ... */}
       <div className="space-y-2">
         <h2 className="text-2xl font-extrabold text-gray-900">Shipping Details</h2>
         <p className="text-gray-500">Where should we deliver your order?</p>
       </div>
 
       <div className="space-y-6">
-        {/* --- Contact Section --- */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">
             Contact
@@ -156,14 +142,12 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
           </div>
         </div>
 
-        {/* --- Address Section --- */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">
             Address
           </h3>
 
           <div className="flex flex-col gap-4">
-            {/* --- CASCADING LOCATION SELECTOR --- */}
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <div
@@ -178,12 +162,10 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       <span className="text-gray-500 text-base">Select City...</span>
                     )}
 
-                    {/* 1. City (Always Show if selected) */}
                     {selection.city && (
                       <span className="font-medium text-gray-900">{selection.city.city_name}</span>
                     )}
 
-                    {/* 2. Zone (Hide if same name as City) */}
                     {selection.zone && selection.zone.zone_name !== selection.city?.city_name && (
                       <div className="flex items-center gap-1">
                         <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -193,7 +175,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       </div>
                     )}
 
-                    {/* 3. Area (Hide if same name as Zone or City) */}
                     {selection.area && (
                       <>
                         {selection.area.area_name !== selection.zone?.zone_name &&
@@ -206,7 +187,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       </>
                     )}
 
-                    {/* Prompt for next step */}
                     {selection.city && !selection.area && (
                       <span className="text-gray-400 italic flex items-center">
                         <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -215,7 +195,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                     )}
                   </div>
 
-                  {/* Reset Button (X) or Dropdown Arrow */}
                   {selection.city ? (
                     <div
                       onClick={handleReset}
@@ -224,7 +203,7 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       <X size={16} />
                     </div>
                   ) : (
-                    <ChevronDownIcon />
+                    <ChevronRight className="rotate-90 text-gray-400 h-5 w-5" />
                   )}
                 </div>
               </PopoverTrigger>
@@ -244,7 +223,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                     className="h-11"
                   />
                   <CommandList className="max-h-[300px]">
-                    {/* Loading State */}
                     {(loadingCities || loadingZones || loadingAreas) && (
                       <div className="flex items-center justify-center py-6 text-brand">
                         <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -252,12 +230,10 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       </div>
                     )}
 
-                    {/* Empty State */}
                     {!loadingCities && !loadingZones && !loadingAreas && (
                       <CommandEmpty>No results found.</CommandEmpty>
                     )}
 
-                    {/* STEP 1: CITIES */}
                     {step === 'CITY' && !loadingCities && (
                       <CommandGroup heading="Select City">
                         {cities
@@ -276,7 +252,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       </CommandGroup>
                     )}
 
-                    {/* STEP 2: ZONES */}
                     {step === 'ZONE' && !loadingZones && (
                       <CommandGroup heading={`${selection.city?.city_name} > Select Zone`}>
                         {zones && zones.length > 0 ? (
@@ -294,7 +269,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                               </CommandItem>
                             ))
                         ) : (
-                          /* FALLBACK: If no zones, use City Name as Zone */
                           <CommandItem
                             value={selection.city!.city_name}
                             onSelect={() =>
@@ -312,7 +286,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                       </CommandGroup>
                     )}
 
-                    {/* STEP 3: AREAS */}
                     {step === 'AREA' && !loadingAreas && (
                       <CommandGroup heading={`${selection.zone?.zone_name} > Select Area`}>
                         {areas && areas.length > 0 ? (
@@ -330,15 +303,14 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                               </CommandItem>
                             ))
                         ) : (
-                          /* FALLBACK: If no Areas, use Zone Name as Area */
                           <CommandItem
                             value={selection.zone!.zone_name}
                             onSelect={() =>
                               handleAreaSelect({
                                 area_id: selection.zone!.zone_id,
                                 area_name: selection.zone!.zone_name,
-                                home_delivery_available: true, // TS FIX
-                                pickup_available: true, // TS FIX
+                                home_delivery_available: true,
+                                pickup_available: true,
                               })
                             }
                             className="py-3 cursor-pointer font-medium"
@@ -354,7 +326,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
               </PopoverContent>
             </Popover>
 
-            {/* Detailed Address Input */}
             <div className="relative group">
               <MapPin
                 className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
@@ -372,8 +343,4 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
       </div>
     </div>
   );
-}
-
-function ChevronDownIcon() {
-  return <ChevronRight className="rotate-90 text-gray-400 h-5 w-5" />;
 }

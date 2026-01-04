@@ -1,6 +1,13 @@
-import { Product, Shop } from '@/app/data';
 import { BACKEND_URL } from '@/lib/constants';
+import { Product } from './products';
 
+export interface Shop {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
 export async function fetchMyShops() {
   const response = await fetch(BACKEND_URL + '/api/v1/shops/mine', {
     method: 'GET',

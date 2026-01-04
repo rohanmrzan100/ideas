@@ -1,11 +1,11 @@
 'use client';
 
-import { Product } from '@/app/data';
 import { cn } from '@/lib/utils';
 import { Banknote, CheckCircle2, LucideIcon, QrCode, ShieldCheck } from 'lucide-react';
 import { UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
 import { motion } from 'framer-motion';
+import { Product } from '@/api/products';
 
 type StepPaymentProps = {
   product: Product;

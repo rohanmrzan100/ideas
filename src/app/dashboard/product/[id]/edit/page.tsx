@@ -1,7 +1,6 @@
 'use client';
 
-import { fetchProductById, updateProduct } from '@/api/products';
-import { Product } from '@/app/data';
+import { fetchProductById, Product, updateProduct } from '@/api/products';
 import { BACKEND_URL } from '@/lib/constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';

@@ -15,6 +15,8 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     const initAuth = async () => {
       try {
         const user = await getSessionUser();
+        console.log({ user });
+
         if (user) {
           storeRef.current?.dispatch(setUser(user));
         }

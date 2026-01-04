@@ -1,9 +1,9 @@
-import { Product } from '@/app/data';
 import { Check, Info } from 'lucide-react';
 import { UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { Product } from '@/api/products';
 
 type ProductInfoProps = {
   product: Product;

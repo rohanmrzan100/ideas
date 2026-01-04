@@ -1,6 +1,43 @@
-import { Product } from '@/app/data';
 import { BACKEND_URL } from '@/lib/constants';
 
+export type ProductVariant = {
+  sku?: string;
+  size: string;
+  color: string;
+  stock: number;
+  id?: string;
+  product_id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+export type ProductImages = {
+  id?: string;
+  product_id?: string;
+  cloudinary_public_id?: string;
+  url: string;
+  position: number;
+};
+
+export interface Shop {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+export type Product = {
+  name: string;
+  id: string;
+  description: string;
+  price: number;
+  display_price: number | null;
+  shop_id: string | null;
+  productImages: ProductImages[];
+  shop: Shop;
+  open_graph_image: string | null;
+  [key: string]: unknown;
+  product_variants: ProductVariant[];
+};
 export async function handleDeleteProduct(id: string) {
   const response = await fetch(BACKEND_URL + '/api/v1/product/' + id, {
     method: 'DELETE',
