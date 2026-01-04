@@ -141,7 +141,6 @@ export default function AddProductPage() {
     try {
       const finalImages = productImages.map((img, index) => ({
         url: img.serverData!.url,
-        cloudinary_public_id: img.serverData!.public_id,
         position: index,
       }));
 

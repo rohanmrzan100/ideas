@@ -1,6 +1,7 @@
 'use client';
 
 import { fetchProductById, updateProduct } from '@/api/products';
+import { Product } from '@/app/data';
 import { BACKEND_URL } from '@/lib/constants';
 import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,13 +14,11 @@ import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
 import { ProductFormValues } from '../../page';
-import { Product } from '@/app/data';
 
 export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
-  const activeShopId = useAppSelector((s) => s.app.activeShopId);
   const queryClient = useQueryClient();
 
   const [productImages, setProductImages] = useState<ProductImageState[]>([]);
@@ -29,6 +28,7 @@ export default function EditProductPage() {
   const { data: product, isLoading: isFetching } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => fetchProductById(productId),
+    enabled: !!productId,
   });
 
   // 2. Setup Form
@@ -47,6 +47,7 @@ export default function EditProductPage() {
       price: 0,
       display_price: 0,
       product_variants: [],
+      category: 'clothing', // UI-only field required by BasicDetails component
     },
   });
 
@@ -58,7 +59,7 @@ export default function EditProductPage() {
         description: product.description,
         price: Number(product.price),
         display_price: product.display_price ? Number(product.display_price) : 0,
-        category: 'clothing',
+        category: 'clothing', // Defaulting to clothing as backend doesn't store this yet
         product_variants: product.product_variants.map((v) => ({
           size: v.size,
           color: v.color,
@@ -70,7 +71,7 @@ export default function EditProductPage() {
         const mappedImages: ProductImageState[] = product.productImages
           .sort((a, b) => a.position - b.position)
           .map((img) => ({
-            id: img.id ?? '',
+            id: img.id ?? Math.random().toString(36),
             previewUrl: img.url,
             status: 'success',
             serverData: {
@@ -119,7 +120,6 @@ export default function EditProductPage() {
                 status: 'success',
                 serverData: {
                   url: result.data.cloudinaryUrl,
-                  public_id: result.data.public_id,
                 },
               }
             : img,
@@ -167,18 +167,25 @@ export default function EditProductPage() {
       return;
     }
 
+    // Prepare images for DTO
     const finalImages = productImages.map((img, index) => ({
       url: img.serverData!.url,
-      cloudinary_public_id: img.serverData!.public_id,
       position: index,
     }));
 
+    // Filter out 'category' as it's not part of the backend DTO
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { category, ...restData } = data;
+
     const payload = {
-      ...data,
-      shop_id: activeShopId,
+      ...restData,
       price: Number(data.price),
       display_price: data.display_price ? Number(data.display_price) : undefined,
       productImages: finalImages,
+      product_variants: data.product_variants.map((variant) => ({
+        ...variant,
+        stock: Number(variant.stock),
+      })),
     };
 
     updateMutation.mutate(payload);

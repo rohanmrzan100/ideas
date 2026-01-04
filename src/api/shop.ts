@@ -40,11 +40,12 @@ export const fetchShopProducts = async (activeShopId: string): Promise<Product[]
 export async function getProduct(shopName: string, slug: string): Promise<Product | null> {
   try {
     const res = await fetch(`${BACKEND_URL}/api/v1/product/${shopName}/${slug}`, {
-      cache: 'no-store',
+      next: {
+        revalidate: 3600,
+        tags: [`product-${slug}`],
+      },
     });
-
     if (!res.ok) return null;
-
     const data = await res.json();
     return data;
   } catch (error) {

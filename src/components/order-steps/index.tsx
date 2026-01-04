@@ -3,17 +3,37 @@
 import { createOrder } from '@/api/order';
 import { Product } from '@/app/data';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import { ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import Carousel from '../Carousel';
 import CheckoutFooter from './Footer';
-import StepVerification from './Otp';
-import Payment from './Payment';
-import PersonalInfo from './PersonalInfo';
 import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
+const PersonalInfo = dynamic(() => import('./PersonalInfo'), {
+  loading: () => (
+    <div className="h-64 flex items-center justify-center">
+      <Loader2 className="animate-spin text-brand" />
+    </div>
+  ),
+});
+const StepVerification = dynamic(() => import('./Otp'), {
+  loading: () => (
+    <div className="h-64 flex items-center justify-center">
+      <Loader2 className="animate-spin text-brand" />
+    </div>
+  ),
+});
+const Payment = dynamic(() => import('./Payment'), {
+  loading: () => (
+    <div className="h-64 flex items-center justify-center">
+      <Loader2 className="animate-spin text-brand" />
+    </div>
+  ),
+});
 export type CheckoutFormData = {
   selectedSize: string;
   selectedColor: string;
@@ -106,7 +126,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-gray-50 md:bg-white font-sans overflow-hidden">
+    <div className="flex flex-col h-dvh bg-gray-50 md:bg-white font-sans overflow-hidden">
       {/* Mobile: Header & Collapsible Summary (Visible on Step 2, 3, 4) */}
       <div className="md:hidden bg-white z-30 shadow-sm relative transition-all duration-300">
         <Stepper step={step} steps={checkoutSteps} />
@@ -133,10 +153,12 @@ const OrderingSteps = ({ product }: { product: Product }) => {
             >
               <div className="px-6 py-4 bg-gray-50 flex gap-4">
                 <div className="w-16 h-16 rounded-md bg-white border border-gray-200 overflow-hidden relative shrink-0">
-                  <img
+                  <Image
                     src={product.productImages[0].url}
                     alt="Product"
                     className="object-cover w-full h-full"
+                    width={500}
+                    height={500}
                   />
                   <span className="absolute bottom-0 right-0 bg-brand text-white text-[10px] px-1.5 py-0.5 rounded-tl-md font-bold">
                     1
@@ -175,7 +197,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
           >
             <Carousel productImages={product.productImages} />
             {/* Mobile Gradient Overlay for Step 1 */}
-            <div className="md:hidden absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none" />
+            <div className="md:hidden absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-gray-50 to-transparent pointer-events-none" />
           </motion.div>
 
           {/* RIGHT: Form Steps */}

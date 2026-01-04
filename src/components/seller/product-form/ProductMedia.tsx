@@ -12,7 +12,6 @@ export type ProductImageState = {
   serverData?: {
     // Data returned from your backend
     url: string;
-    public_id: string;
   };
 };
 
