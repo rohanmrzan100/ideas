@@ -1,4 +1,3 @@
-//
 'use client';
 
 import { useState } from 'react';
@@ -114,33 +113,30 @@ export default function AddProductPage() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-
-      if (productImages.length + newFiles.length > 8) {
-        setDialogState({
-          open: true,
-          type: 'error',
-          title: 'Limit Reached',
-          message: 'You can only upload up to 8 images per product.',
-        });
-        return;
-      }
-
-      const newImageStates: ProductImageState[] = newFiles.map((file) => {
-        const tempId = Math.random().toString(36).substring(7);
-        uploadFileToBackend(file, tempId);
-        return {
-          id: tempId,
-          file,
-          previewUrl: URL.createObjectURL(file),
-          status: 'uploading',
-        };
+  // UPDATED: Now accepts an array of Files, not an event
+  const handleImagesAdded = (files: File[]) => {
+    if (productImages.length + files.length > 8) {
+      setDialogState({
+        open: true,
+        type: 'error',
+        title: 'Limit Reached',
+        message: 'You can only upload up to 8 images per product.',
       });
-
-      setProductImages((prev) => [...prev, ...newImageStates]);
+      return;
     }
+
+    const newImageStates: ProductImageState[] = files.map((file) => {
+      const tempId = Math.random().toString(36).substring(7);
+      uploadFileToBackend(file, tempId);
+      return {
+        id: tempId,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        status: 'uploading',
+      };
+    });
+
+    setProductImages((prev) => [...prev, ...newImageStates]);
   };
 
   const removeImage = (id: string) => {
@@ -177,10 +173,6 @@ export default function AddProductPage() {
         message: 'Some images failed to upload. Please remove or retry them.',
       });
       toast.info('Please wait for images to finish uploading.');
-      return;
-    }
-    if (failed) {
-      toast.error('Some images failed to upload. Please remove or retry them.');
       return;
     }
     if (productImages.length === 0) {
@@ -272,7 +264,7 @@ export default function AddProductPage() {
               images={productImages}
               uploadError={null}
               availableColors={variantColors}
-              onImageSelect={handleImageSelect}
+              onImagesAdded={handleImagesAdded}
               onRemoveImage={removeImage}
               onAssignColor={handleAssignColor}
             />
@@ -317,7 +309,7 @@ export default function AddProductPage() {
           <DialogHeader>
             <div className="flex items-center gap-4">
               <div
-                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
+                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 \${
                   dialogState.type === 'success'
                     ? 'bg-green-100 text-green-600'
                     : 'bg-red-100 text-red-600'

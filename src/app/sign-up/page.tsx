@@ -1,112 +1,98 @@
 'use client';
 
-import Stepper from '@/components/order-steps/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BACKEND_URL } from '@/lib/constants';
+import { PLAN_TYPE } from '@/lib/enums';
 import { cn } from '@/lib/utils';
+import { useAppDispatch } from '@/store/hooks';
+import { setUser } from '@/store/slices/app.slice';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowLeft,
+  ArrowRight,
   Check,
   CheckCircle2,
-  ChevronRight,
   Crown,
   Eye,
   EyeOff,
+  LayoutDashboard,
   Loader2,
-  Lock,
   Mail,
   Phone,
+  ShieldCheck,
+  Sparkles,
   Store,
   User,
   XCircle,
-  Zap
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+// --- Types & Data ---
+
 type SignUpData = {
-  // Step 1: Personal Info
   name: string;
   email: string;
   phone_number: string;
-
-  // Step 2: Password
   password: string;
   confirm_password: string;
-
-  // Step 3: Pricing Plan
-  plan: 'free' | 'pro' | 'enterprise';
-
-  // Step 4: Shop Details
+  plan: PLAN_TYPE;
   shop_name: string;
 };
 
 const pricingPlans = [
   {
-    id: 'free',
-    name: 'Free',
-    price: '₹0',
+    id: 'free' as PLAN_TYPE,
+    name: 'Starter',
+    price: 'Rs. 0',
     period: 'forever',
     icon: Store,
-    features: ['Up to 10 products', 'Basic analytics', 'Email support', '5% transaction fee'],
     popular: false,
-    color: 'bg-gray-100 text-gray-600',
+    description: 'For hobbyists',
+    features: ['Up to 50 products', 'Basic analytics', 'Email support'],
   },
   {
-    id: 'pro',
+    id: 'pro' as PLAN_TYPE,
     name: 'Pro',
-    price: '₹999',
-    period: 'per month',
+    price: 'Rs. 999',
+    period: '/mo',
     icon: Zap,
-    features: [
-      'Unlimited products',
-      'Advanced analytics',
-      'Priority support',
-      '2% transaction fee',
-      'Custom domain',
-    ],
     popular: true,
-    color: 'bg-blue-100 text-blue-600',
+    description: 'For growing shops',
+    features: ['Unlimited products', 'Advanced analytics', 'Priority support', 'Custom branding'],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: '₹2,999',
-    period: 'per month',
+    id: 'enterprise' as PLAN_TYPE,
+    name: 'Scale',
+    price: 'Rs. 2,999',
+    period: '/mo',
     icon: Crown,
-    features: [
-      'Everything in Pro',
-      'Dedicated account manager',
-      '24/7 phone support',
-      '0% transaction fee',
-      'API access',
-      'White-label options',
-    ],
     popular: false,
-    color: 'bg-purple-100 text-purple-600',
+    description: 'For large teams',
+    features: ['Dedicated manager', 'API access', 'White-label solution', '24/7 phone support'],
   },
 ];
 
+const features = [
+  { icon: LayoutDashboard, text: 'Real-time Analytics Dashboard' },
+  { icon: ShieldCheck, text: 'Bank-grade Security' },
+  { icon: Sparkles, text: 'AI-Powered Inventory' },
+];
+
 const variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 50 : -50,
-    opacity: 0,
-  }),
-  center: {
-    zIndex: 1,
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    zIndex: 0,
-    x: direction < 0 ? 50 : -50,
-    opacity: 0,
-  }),
+  enter: (direction: number) => ({ x: direction > 0 ? 20 : -20, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction < 0 ? 20 : -20, opacity: 0 }),
 };
 
+// --- Main Component ---
+
 export default function SignUpPage() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,8 +100,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Password Strength State
-  const [passwordCriteria, setPasswordCriteria] = useState({
+  const [criteria, setCriteria] = useState({
     length: false,
     upper: false,
     lower: false,
@@ -123,200 +108,205 @@ export default function SignUpPage() {
   });
 
   const signupSteps = [
-    { label: 'Personal Info' },
-    { label: 'Secure Password' },
-    { label: 'Create Shop' },
-    { label: 'Choose Plan' },
+    { label: 'Details', icon: User },
+    { label: 'Security', icon: ShieldCheck },
+    { label: 'Store', icon: Store },
+    { label: 'Plan', icon: Crown },
   ];
 
   const {
     register,
     handleSubmit,
-    formState: { errors, touchedFields },
+    formState: { errors },
     watch,
     trigger,
     setValue,
   } = useForm<SignUpData>({
-    mode: 'onTouched',
-    defaultValues: {
-      plan: 'pro',
-    },
+    mode: 'onChange',
+    defaultValues: { plan: 'pro' as PLAN_TYPE },
   });
 
-  const password = watch('password');
+  const password = watch('password') || '';
   const selectedPlan = watch('plan');
   const totalSteps = signupSteps.length;
 
-  // Real-time password validation
   useEffect(() => {
-    if (password) {
-      setPasswordCriteria({
-        length: password.length >= 8,
-        upper: /[A-Z]/.test(password),
-        lower: /[a-z]/.test(password),
-        number: /\d/.test(password),
-      });
-    } else {
-      setPasswordCriteria({
-        length: false,
-        upper: false,
-        lower: false,
-        number: false,
-      });
-    }
+    setCriteria({
+      length: password.length >= 8,
+      upper: /[A-Z]/.test(password),
+      lower: /[a-z]/.test(password),
+      number: /\d/.test(password),
+    });
   }, [password]);
 
-  const handleNext = async () => {
-    let fieldsToValidate: (keyof SignUpData)[] = [];
+  const onSubmit = async (data: SignUpData) => {
+    let fields: (keyof SignUpData)[] = [];
+    if (currentStep === 1) fields = ['name', 'email', 'phone_number'];
+    if (currentStep === 2) fields = ['password', 'confirm_password'];
+    if (currentStep === 3) fields = ['shop_name'];
+    if (currentStep === 4) fields = ['plan'];
 
-    if (currentStep === 1) {
-      fieldsToValidate = ['name', 'email', 'phone_number'];
-    } else if (currentStep === 2) {
-      fieldsToValidate = ['password', 'confirm_password'];
-    } else if (currentStep === 3) {
-      fieldsToValidate = ['shop_name'];
-    } else if (currentStep === 4) {
-      fieldsToValidate = ['plan'];
+    const isValidStep = await trigger(fields);
+
+    if (isValidStep && currentStep < totalSteps) {
+      setDirection(1);
+      setCurrentStep((prev) => prev + 1);
+      return;
     }
 
-    const isValid = await trigger(fieldsToValidate);
+    if (isValidStep && currentStep === totalSteps) {
+      setIsSubmitting(true);
+      setSignupError(null);
 
-    if (isValid) {
-      setDirection(1);
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+      const payload = {
+        phone_number: data.phone_number,
+        name: data.name,
+        email: data.email || undefined,
+        password: data.password,
+        shop_name: data.shop_name,
+        plan: data.plan,
+      };
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/v1/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Registration failed');
+        }
+
+        const result = await response.json();
+        dispatch(setUser(result.data));
+        router.push('/dashboard');
+      } catch (error) {
+        setSignupError(error instanceof Error ? error.message : 'Something went wrong');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleBack = () => {
+    setSignupError(null);
     setDirection(-1);
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const onSubmit = async (data: SignUpData) => {
-    setIsSubmitting(true);
-    setSignupError(null);
-
-    try {
-      console.log('Sign up data:', data);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // router.push('/dashboard');
-    } catch (error) {
-      console.error(error);
-      setSignupError(
-        error instanceof Error ? error.message : 'Registration failed. Please try again.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const currentProgress = (currentStep / totalSteps) * 100;
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white font-sans overflow-hidden">
-      {/* LEFT SIDE: Visual/Branding */}
-      <div className="hidden lg:flex lg:w-[35%] bg-brand/5 relative flex-col justify-between p-12 overflow-hidden border-r border-gray-100">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-100 rounded-full blur-3xl" />
+    <div className="min-h-screen w-full flex bg-slate-50 font-sans selection:bg-[#0F172A] selection:text-white">
+      {/* LEFT SIDE: Form Section */}
 
-        <div className="relative z-10 flex items-center gap-3 text-brand font-bold text-2xl tracking-tight">
-          <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center text-brand">
-            <Store size={20} />
+      {/* RIGHT SIDE: Visual/Branding (Hidden on mobile) */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] xl:w-[50%] bg-[#0F172A] text-white p-12 relative overflow-hidden">
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-0 right-0 w-125 h-125 bg-indigo-500/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-125 h-125 bg-blue-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-indigo-200 mb-6">
+            <Sparkles size={12} /> New Features Live
           </div>
-          InstaShopNepal
+          <h2 className="text-4xl xl:text-5xl font-bold leading-tight mb-6">
+            Launch your <br />
+            online dream today.
+          </h2>
+          <p className="text-indigo-200/80 text-lg max-w-md leading-relaxed">
+            Join 15,000+ business owners who trust InstaShop to manage their inventory, sales, and
+            customer relationships.
+          </p>
         </div>
 
-        <div className="relative z-10 space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">
-              Start your journey <br />
-              <span className="text-brand">with us today.</span>
-            </h1>
-            <p className="text-lg text-gray-500 max-w-sm">
-              Create your professional store in minutes. No credit card required for trial.
-            </p>
-          </div>
-
-          <div className="space-y-6 pt-8">
-            {signupSteps.map((step, index) => {
-              const stepNumber = index + 1;
-              const isCompleted = currentStep > stepNumber;
-              const isActive = currentStep === stepNumber;
-
-              return (
-                <div key={step.label} className="flex items-center gap-4 group">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-bold text-sm',
-                      isCompleted
-                        ? 'bg-brand border-brand text-white'
-                        : isActive
-                        ? 'bg-white border-brand text-brand shadow-lg shadow-brand/20 scale-110'
-                        : 'bg-transparent border-gray-300 text-gray-400',
-                    )}
-                  >
-                    {isCompleted ? <Check size={18} /> : stepNumber}
-                  </div>
-                  <div>
-                    <p
-                      className={cn(
-                        'font-bold transition-colors duration-300',
-                        isActive || isCompleted ? 'text-gray-900' : 'text-gray-400',
-                      )}
-                    >
-                      {step.label}
-                    </p>
-                    {isActive && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-brand font-medium mt-0.5"
-                      >
-                        In Progress
-                      </motion.p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Feature List */}
+        <div className="relative z-10 space-y-6">
+          {features.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-4 group">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:scale-110 transition-all duration-300">
+                <item.icon className="text-indigo-300 group-hover:text-white" size={24} />
+              </div>
+              <div>
+                <p className="font-semibold text-white/90">{item.text}</p>
+                <p className="text-sm text-white/40">Included in all plans</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="relative z-10 flex items-center gap-3 text-sm font-medium text-gray-500">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="w-8 h-8 rounded-full border-2 border-white bg-gray-200"
-              />
+        {/* Testimonial Snippet */}
+        <div className="relative z-10 pt-8 border-t border-white/10">
+          <div className="flex items-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <div key={s} className="w-4 h-4 bg-orange-400 rounded-sm" />
             ))}
           </div>
-          Join 4,000+ sellers today
+          <p className="text-sm text-white/60 italic">
+            The easiest platform I have ever used. I set up my clothing store in 15 minutes.
+          </p>
         </div>
       </div>
+      <div className="flex-1 flex flex-col relative w-full lg:w-[55%] xl:w-[50%] h-full overflow-y-auto">
+        {/* Header */}
+        <div className="px-6 py-6 md:px-12 md:py-8 flex justify-between items-center bg-white lg:bg-transparent sticky top-0 z-10 lg:static">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-[#0F172A] text-white p-2 rounded-lg">
+              <Store size={20} strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-xl tracking-tight text-[#0F172A]">InstaShop</span>
+          </div>
+          <Link
+            href="/sign-in"
+            className="text-sm font-medium text-slate-600 hover:text-[#0F172A] hidden sm:block"
+          >
+            Already a member?{' '}
+            <span className="underline decoration-slate-300 hover:decoration-[#0F172A]">
+              Sign in
+            </span>
+          </Link>
+        </div>
 
-      {/* RIGHT SIDE: Form */}
-      <div className="w-full lg:w-[65%] flex flex-col items-center justify-center relative">
-        <div className="w-full max-w-lg p-6 md:p-12 lg:p-0">
-          {/* Mobile Stepper */}
-          <div className="lg:hidden mb-8">
-            <Stepper step={currentStep} steps={signupSteps} />
+        {/* Content Container */}
+        <div className="flex-1 flex flex-col justify-center px-6 py-8 md:px-12 lg:px-16 max-w-3xl mx-auto w-full">
+          {/* Progress Indicator */}
+          <div className="mb-10">
+            <div className="flex items-center justify-between text-sm font-medium text-slate-500 mb-2">
+              <span>
+                Step {currentStep} of {totalSteps}
+              </span>
+              <span className="text-[#0F172A]">{signupSteps[currentStep - 1].label}</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-[#0F172A]"
+                initial={{ width: 0 }}
+                animate={{ width: `${currentProgress}%` }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2 mb-8 text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-gray-900">
-              {currentStep === 1 && 'Personal Details'}
-              {currentStep === 2 && 'Set a Password'}
-              {currentStep === 3 && 'Name your Shop'}
-              {currentStep === 4 && 'Select a Plan'}
-            </h2>
-            <p className="text-gray-500">
-              {currentStep === 1 && "Let's get to know you better."}
-              {currentStep === 2 && 'Secure your account with a strong password.'}
-              {currentStep === 3 && 'This will be your unique store identity.'}
-              {currentStep === 4 && 'Choose the best plan for your business needs.'}
+          <div className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-[#0F172A] mb-3 tracking-tight">
+              {currentStep === 1 && "Let's get started"}
+              {currentStep === 2 && 'Secure your account'}
+              {currentStep === 3 && 'Name your store'}
+              {currentStep === 4 && 'Choose your plan'}
+            </h1>
+            <p className="text-slate-500 text-lg">
+              {currentStep === 1 && 'Create an account to start managing your business.'}
+              {currentStep === 2 && 'Setup a strong password to protect your data.'}
+              {currentStep === 3 && 'This will be the name customers see.'}
+              {currentStep === 4 && 'Start for free or scale immediately.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="relative min-h-[300px]">
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={currentStep}
@@ -325,266 +315,226 @@ export default function SignUpPage() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{
-                  x: { type: 'spring', stiffness: 300, damping: 30 },
-                  opacity: { duration: 0.2 },
-                }}
-                className="w-full"
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="w-full min-h-75"
               >
-                {/* STEP 1: Personal Info */}
+                {/* STEP 1 */}
                 {currentStep === 1 && (
                   <div className="space-y-5">
-                    <FormField
-                      label="Full Name"
-                      icon={<User size={18} />}
-                      error={errors.name?.message}
-                    >
-                      <Input
-                        {...register('name', {
-                          required: 'Full name is required',
-                          minLength: { value: 2, message: 'Name too short' },
-                        })}
-                        placeholder="John Doe"
-                        className="pl-10"
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Email Address"
-                      icon={<Mail size={18} />}
-                      error={errors.email?.message}
-                    >
-                      <Input
-                        {...register('email', {
-                          required: 'Email is required',
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: 'Invalid email address',
-                          },
-                        })}
-                        type="email"
-                        placeholder="john@example.com"
-                        className="pl-10"
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Phone Number"
-                      icon={<Phone size={18} />}
-                      error={errors.phone_number?.message}
-                    >
-                      <Input
-                        {...register('phone_number', {
-                          required: 'Phone number is required',
-                          pattern: {
-                            value: /^[0-9]{10}$/,
-                            message: 'Invalid 10-digit number',
-                          },
-                        })}
-                        type="tel"
-                        placeholder="98XXXXXXXX"
-                        className="pl-10"
-                        maxLength={10}
-                      />
-                    </FormField>
-                  </div>
-                )}
-
-                {/* STEP 2: Password */}
-                {currentStep === 2 && (
-                  <div className="space-y-6">
-                    <FormField
-                      label="Password"
-                      icon={<Lock size={18} />}
-                      error={errors.password?.message}
-                    >
-                      <Input
-                        {...register('password', {
-                          required: 'Password is required',
-                          minLength: {
-                            value: 8,
-                            message: 'Must be at least 8 characters',
-                          },
-                          pattern: {
-                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                            message: 'Must contain uppercase, lowercase & number',
-                          },
-                        })}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Create a strong password"
-                        className="pl-10 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand transition-colors"
-                      >
-                        {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                      </button>
-                    </FormField>
-
-                    {/* Password Strength Meter */}
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                      <p className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">
-                        Password Requirements
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <PasswordCheck
-                          label="8+ Characters"
-                          met={passwordCriteria.length}
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <FormField label="Full Name" error={errors.name?.message}>
+                        <div className="relative group">
+                          <User
+                            className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-[#0F172A] transition-colors"
+                            size={18}
+                          />
+                          <Input
+                            {...register('name', { required: 'Name is required' })}
+                            placeholder="John Doe"
+                            className="pl-10 h-12 bg-white border-slate-200 focus:border-[#0F172A] focus:ring-[#0F172A]/10 transition-all"
+                          />
+                        </div>
+                      </FormField>
+                      <FormField label="Phone Number" error={errors.phone_number?.message}>
+                        <div className="relative group">
+                          <Phone
+                            className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-[#0F172A] transition-colors"
+                            size={18}
+                          />
+                          <Input
+                            {...register('phone_number', {
+                              required: 'Required',
+                              pattern: { value: /^[0-9]{10}$/, message: '10 digits required' },
+                            })}
+                            placeholder="98XXXXXXXX"
+                            className="pl-10 h-12 bg-white border-slate-200 focus:border-[#0F172A] focus:ring-[#0F172A]/10 transition-all"
+                            maxLength={10}
+                          />
+                        </div>
+                      </FormField>
+                    </div>
+                    <FormField label="Email Address (Optional)" error={errors.email?.message}>
+                      <div className="relative group">
+                        <Mail
+                          className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-[#0F172A] transition-colors"
+                          size={18}
                         />
-                        <PasswordCheck
-                          label="Uppercase Letter"
-                          met={passwordCriteria.upper}
-                        />
-                        <PasswordCheck
-                          label="Lowercase Letter"
-                          met={passwordCriteria.lower}
-                        />
-                        <PasswordCheck
-                          label="Number"
-                          met={passwordCriteria.number}
+                        <Input
+                          {...register('email')}
+                          type="email"
+                          placeholder="john@example.com"
+                          className="pl-10 h-12 bg-white border-slate-200 focus:border-[#0F172A] focus:ring-[#0F172A]/10 transition-all"
                         />
                       </div>
-                    </div>
-
-                    <FormField
-                      label="Confirm Password"
-                      icon={<Lock size={18} />}
-                      error={errors.confirm_password?.message}
-                    >
-                      <Input
-                        {...register('confirm_password', {
-                          required: 'Please confirm your password',
-                          validate: (val) =>
-                            val === password || 'Passwords do not match',
-                        })}
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="Re-enter password"
-                        className="pl-10 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand transition-colors"
-                      >
-                        {showConfirmPassword ? (
-                          <Eye size={18} />
-                        ) : (
-                          <EyeOff size={18} />
-                        )}
-                      </button>
                     </FormField>
                   </div>
                 )}
 
-                {/* STEP 3: Shop Name */}
+                {/* STEP 2 */}
+                {currentStep === 2 && (
+                  <div className="space-y-6">
+                    <FormField label="Password" error={errors.password?.message}>
+                      <div className="relative">
+                        <Input
+                          {...register('password', {
+                            required: 'Password is required',
+                            validate: (value) => {
+                              if (value.length < 8) return 'At least 8 characters';
+                              if (!/[A-Z]/.test(value)) return 'One uppercase letter needed';
+                              if (!/[a-z]/.test(value)) return 'One lowercase letter needed';
+                              if (!/\d/.test(value)) return 'One number needed';
+                              return true;
+                            },
+                          })}
+                          type={showPassword ? 'text' : 'password'}
+                          className="h-12 pr-10 bg-white border-slate-200 focus:border-[#0F172A] transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                        </button>
+                      </div>
+                    </FormField>
+
+                    {/* Visual Password Feedback */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <PasswordCheck label="8+ Chars" met={criteria.length} />
+                      <PasswordCheck label="Uppercase" met={criteria.upper} />
+                      <PasswordCheck label="Lowercase" met={criteria.lower} />
+                      <PasswordCheck label="Number" met={criteria.number} />
+                    </div>
+
+                    <FormField label="Confirm Password" error={errors.confirm_password?.message}>
+                      <div className="relative">
+                        <Input
+                          {...register('confirm_password', {
+                            required: 'Please confirm password',
+                            validate: (v) => v === password || 'Passwords do not match',
+                          })}
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          className="h-12 pr-10 bg-white border-slate-200 focus:border-[#0F172A] transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
+                        >
+                          {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                        </button>
+                      </div>
+                    </FormField>
+                  </div>
+                )}
+
+                {/* STEP 3 */}
                 {currentStep === 3 && (
                   <div className="space-y-5">
-                    <FormField
-                      label="Shop Name"
-                      icon={<Store size={18} />}
-                      error={errors.shop_name?.message}
-                    >
-                      <Input
-                        {...register('shop_name', {
-                          required: 'Shop name is required',
-                          minLength: { value: 3, message: 'Too short' },
-                        })}
-                        placeholder="e.g. Urban Threads"
-                        className="pl-10"
-                        autoFocus
-                      />
-                    </FormField>
-                    <div className="p-4 bg-blue-50 text-blue-700 text-sm rounded-xl flex items-start gap-3">
-                      <Store className="shrink-0 mt-0.5" size={18} />
-                      <p>
-                        This will be displayed on your storefront and invoices.
-                        You can change this later in settings.
+                    <FormField label="Shop Name" error={errors.shop_name?.message}>
+                      <div className="relative group">
+                        <Store
+                          className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-[#0F172A] transition-colors"
+                          size={18}
+                        />
+                        <Input
+                          {...register('shop_name', { required: 'Shop name is required' })}
+                          placeholder="e.g. Himalayan Crafts"
+                          className="pl-10 h-14 text-lg bg-white border-slate-200 focus:border-[#0F172A] focus:ring-[#0F172A]/10 transition-all"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Your shop URL will be generated based on this name.
                       </p>
-                    </div>
+                    </FormField>
                   </div>
                 )}
 
-                {/* STEP 4: Pricing Plan */}
+                {/* STEP 4 */}
                 {currentStep === 4 && (
-                  <div className="space-y-4">
-                    <input
-                      type="hidden"
-                      {...register('plan', { required: true })}
-                    />
-                    <div className="grid gap-4">
-                      {pricingPlans.map((plan) => (
+                  <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {pricingPlans.map((plan) => {
+                      const isSelected = selectedPlan === plan.id;
+                      return (
                         <div
                           key={plan.id}
-                          onClick={() => setValue('plan', plan.id as any)}
+                          onClick={() => {
+                            setValue('plan', plan.id as PLAN_TYPE);
+                            trigger('plan');
+                          }}
                           className={cn(
-                            'relative cursor-pointer rounded-2xl border-2 p-5 transition-all duration-200 flex items-center gap-4 group',
-                            selectedPlan === plan.id
-                              ? 'border-brand bg-brand/5 shadow-md scale-[1.02]'
-                              : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                            'relative cursor-pointer rounded-2xl border p-5 transition-all duration-300',
+                            isSelected
+                              ? 'border-[#0F172A] bg-[#0F172A] text-white shadow-xl scale-[1.02]'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md text-slate-800',
                           )}
                         >
-                          {/* Plan Icon */}
-                          <div
-                            className={cn(
-                              'w-14 h-14 rounded-xl flex items-center justify-center text-xl shrink-0 transition-colors',
-                              selectedPlan === plan.id
-                                ? 'bg-brand text-white'
-                                : plan.color
-                            )}
-                          >
-                            <plan.icon size={24} />
-                          </div>
+                          {plan.popular && !isSelected && (
+                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-400 text-[#0F172A] text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm">
+                              Recommended
+                            </span>
+                          )}
 
-                          {/* Content */}
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-1">
-                              <h3 className="font-bold text-gray-900">
-                                {plan.name}
-                              </h3>
-                              {plan.popular && (
-                                <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                  BEST VALUE
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-lg font-extrabold text-gray-900">
-                                {plan.price}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                /{plan.period}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">
-                              {plan.features.slice(0, 3).join(' • ')}
-                            </p>
-                          </div>
-
-                          {/* Checkbox Visual */}
-                          <div
-                            className={cn(
-                              'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors',
-                              selectedPlan === plan.id
-                                ? 'border-brand bg-brand text-white'
-                                : 'border-gray-200'
-                            )}
-                          >
-                            {selectedPlan === plan.id && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
+                          <div className="flex flex-col h-full">
+                            <div className="flex justify-between items-start mb-4">
+                              <div
+                                className={cn(
+                                  'p-2 rounded-lg',
+                                  isSelected ? 'bg-white/10' : 'bg-slate-100',
+                                )}
                               >
-                                <Check size={14} strokeWidth={3} />
-                              </motion.div>
-                            )}
+                                <plan.icon size={20} />
+                              </div>
+                              {isSelected && <CheckCircle2 size={24} className="text-white" />}
+                            </div>
+
+                            <h3 className="font-bold text-lg mb-1">{plan.name}</h3>
+                            <p
+                              className={cn(
+                                'text-xs mb-4',
+                                isSelected ? 'text-slate-300' : 'text-slate-500',
+                              )}
+                            >
+                              {plan.description}
+                            </p>
+
+                            <div className="mb-6">
+                              <span className="text-2xl font-bold">{plan.price}</span>
+                              <span
+                                className={cn(
+                                  'text-xs font-medium ml-1',
+                                  isSelected ? 'text-slate-400' : 'text-slate-500',
+                                )}
+                              >
+                                {plan.period}
+                              </span>
+                            </div>
+
+                            <div className="mt-auto space-y-2">
+                              {plan.features.slice(0, 3).map((f, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <Check
+                                    size={12}
+                                    className={cn(
+                                      isSelected ? 'text-emerald-400' : 'text-[#0F172A]',
+                                    )}
+                                  />
+                                  <span
+                                    className={cn(
+                                      'text-xs',
+                                      isSelected ? 'text-slate-300' : 'text-slate-600',
+                                    )}
+                                  >
+                                    {f}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
               </motion.div>
@@ -595,102 +545,78 @@ export default function SignUpPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium flex items-center gap-3 border border-red-100"
+                className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100 text-sm font-medium"
               >
-                <XCircle size={18} />
-                {signupError}
+                <XCircle size={20} className="shrink-0" /> {signupError}
               </motion.div>
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 mt-8 pt-4 border-t border-gray-50">
-              {currentStep > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleBack}
-                  className="h-12 px-6 rounded-xl hover:bg-gray-100 text-gray-600"
-                >
-                  <ArrowLeft size={18} className="mr-2" /> Back
-                </Button>
-              )}
-
-              <Button
-                type={currentStep === totalSteps ? 'submit' : 'button'}
-                onClick={currentStep < totalSteps ? handleNext : undefined}
-                disabled={isSubmitting}
+            <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleBack}
+                disabled={isSubmitting || currentStep === 1}
                 className={cn(
-                  'flex-1 h-12 rounded-xl text-base font-bold shadow-lg transition-all',
-                  currentStep === totalSteps
-                    ? 'bg-brand hover:bg-brand-primary/90 text-white shadow-brand/20'
-                    : 'bg-gray-900 hover:bg-black text-white shadow-gray-200'
+                  'px-4 py-3 text-sm font-bold text-slate-500 hover:text-[#0F172A] transition-colors rounded-xl hover:bg-slate-100',
+                  currentStep === 1 ? 'invisible' : 'visible',
                 )}
               >
+                Back
+              </button>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 h-12 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-base font-bold shadow-lg shadow-slate-900/20 transition-all active:scale-[0.98]"
+              >
                 {isSubmitting ? (
-                  <Loader2 className="animate-spin" />
-                ) : currentStep === totalSteps ? (
-                  <>
-                    Create Account <CheckCircle2 size={18} className="ml-2" />
-                  </>
+                  <Loader2 className="animate-spin" size={20} />
                 ) : (
-                  <>
-                    Continue <ChevronRight size={18} className="ml-2" />
-                  </>
+                  <span className="flex items-center gap-2">
+                    {currentStep === totalSteps ? 'Create Account' : 'Continue'}
+                    {currentStep !== totalSteps && <ArrowRight size={18} />}
+                  </span>
                 )}
               </Button>
             </div>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-8">
-            Already have an account?{' '}
-            <Link
-              href="/sign-in"
-              className="font-bold text-brand hover:underline"
-            >
-              Sign in
+          {/* Mobile Footer */}
+          <div className="mt-8 text-center sm:hidden">
+            <Link href="/sign-in" className="text-sm font-medium text-slate-600">
+              Already a member? <span className="underline decoration-slate-300">Sign in</span>
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// --- Helper Components ---
+// --- Sub Components ---
 
 function FormField({
   label,
-  icon,
   children,
   error,
 }: {
   label: string;
-  icon: React.ReactNode;
   children: React.ReactNode;
   error?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-semibold text-gray-700 ml-1">
-        {label}
-      </label>
-      <div className="relative group">
-        <div
-          className={cn(
-            'absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200',
-            error
-              ? 'text-red-400'
-              : 'text-gray-400 group-focus-within:text-brand'
-          )}
-        >
-          {icon}
-        </div>
-        {children}
-      </div>
+      <label className="text-sm font-semibold text-slate-700 block">{label}</label>
+      {children}
       {error && (
-        <p className="text-xs font-medium text-red-500 ml-1 animate-in slide-in-from-top-1">
-          {error}
-        </p>
+        <motion.p
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="text-xs text-red-500 font-medium flex items-center gap-1"
+        >
+          <XCircle size={12} /> {error}
+        </motion.p>
       )}
     </div>
   );
@@ -700,19 +626,19 @@ function PasswordCheck({ label, met }: { label: string; met: boolean }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-2 text-xs font-medium transition-colors duration-300',
-        met ? 'text-green-600' : 'text-gray-400'
+        'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all border',
+        met
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+          : 'bg-slate-50 text-slate-400 border-slate-100',
       )}
     >
       <div
         className={cn(
-          'w-4 h-4 rounded-full flex items-center justify-center border transition-all duration-300',
-          met
-            ? 'bg-green-100 border-green-200'
-            : 'bg-gray-100 border-gray-200'
+          'w-3 h-3 rounded-full flex items-center justify-center transition-colors',
+          met ? 'bg-emerald-500' : 'bg-slate-300',
         )}
       >
-        {met && <Check size={10} />}
+        {met && <Check size={8} className="text-white" strokeWidth={4} />}
       </div>
       {label}
     </div>

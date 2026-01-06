@@ -129,6 +129,24 @@ export default function ShopSwitcher() {
     }
   };
 
+  useEffect(() => {
+    if (!activeShopId) {
+      const storedId = localStorage.getItem('activeShopId');
+
+      const isValidStoredId = storedId && shops.some((s: Shop) => s.id === storedId);
+
+      if (isValidStoredId) {
+        dispatch(setActiveShopId(storedId));
+        return;
+      }
+
+      if (shops.length > 0) {
+        const firstShopId = shops[0].id;
+        dispatch(setActiveShopId(firstShopId));
+      }
+    }
+  }, [activeShopId, shops, dispatch]);
+
   return (
     <>
       <div className="w-full mt-4 px-4 pb-2">

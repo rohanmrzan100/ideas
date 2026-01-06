@@ -127,7 +127,6 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
                               item.color.toLowerCase() !== '-' ? item.color : 'transparent',
                           }}
                         />
-                        <span className="font-bold text-gray-900 capitalize">{item.color}</span>
                         <span className="text-gray-300">/</span>
                         <span className="font-bold text-gray-900">{item.size}</span>
                       </div>

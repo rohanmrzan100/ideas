@@ -7,6 +7,8 @@ export interface Shop {
   owner_id: string;
   created_at: string;
   updated_at: string;
+  logo?: string;
+  category?: string;
 }
 export async function fetchMyShops() {
   const response = await fetch(BACKEND_URL + '/api/v1/shops/mine', {
@@ -59,4 +61,30 @@ export async function getProduct(shopName: string, slug: string): Promise<Produc
     console.error('Error fetching product:', error);
     return null;
   }
+}
+
+export async function updateShop(id: string, data: Partial<Shop>): Promise<Shop> {
+  const response = await fetch(`${BACKEND_URL}/api/v1/shops/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update shop');
+  return await response.json();
+}
+
+export async function uploadShopLogo(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${BACKEND_URL}/api/v1/shops/upload-logo`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error('Failed to upload logo');
+  const result = await response.json();
+  return result.url;
 }

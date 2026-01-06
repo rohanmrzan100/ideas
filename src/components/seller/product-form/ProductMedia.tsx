@@ -1,4 +1,3 @@
-//
 'use client';
 
 import {
@@ -24,6 +23,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { ImageCropper } from '@/components/ImageCropper';
 
 // Declare EyeDropper API for TypeScript
 declare global {
@@ -50,7 +50,7 @@ type ProductMediaProps = {
   images: ProductImageState[];
   uploadError: string | null;
   availableColors: string[];
-  onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImagesAdded: (files: File[]) => void; // Changed from onImageSelect
   onRemoveImage: (id: string) => void;
   onAssignColor: (id: string, color: string) => void;
 };
@@ -59,17 +59,56 @@ export default function ProductMedia({
   images,
   uploadError,
   availableColors,
-  onImageSelect,
+  onImagesAdded,
   onRemoveImage,
   onAssignColor,
 }: ProductMediaProps) {
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+
+      // If exactly one image is selected, offer to crop it
+      if (files.length === 1) {
+        const file = files[0];
+        setPendingFile(file);
+        setCropImage(URL.createObjectURL(file));
+        // Reset input so same file can be selected again if cancelled
+        e.target.value = '';
+      } else {
+        // Bulk upload: skip crop
+        onImagesAdded(files);
+        e.target.value = '';
+      }
+    }
+  };
+
+  const handleCropComplete = (croppedFile: File) => {
+    onImagesAdded([croppedFile]);
+    if (cropImage) URL.revokeObjectURL(cropImage);
+    setCropImage(null);
+    setPendingFile(null);
+  };
+
+  const handleCropCancel = (open: boolean) => {
+    if (!open) {
+      // If cancelled, just upload original if it exists?
+      // Or simply cancel the add? Standard UX is cancel the add.
+      if (cropImage) URL.revokeObjectURL(cropImage);
+      setCropImage(null);
+      setPendingFile(null);
+    }
+  };
+
   return (
     <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-gray-50/30">
         <div>
           <h2 className="text-lg font-bold text-gray-900">Product Media</h2>
           <p className="text-sm text-gray-500">
-            Upload high quality images. Click &quot;Tag Color&quot; to link images to variants.
+            Upload high quality images. 4:5 aspect ratio is recommended.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -111,7 +150,7 @@ export default function ProductMedia({
                 multiple
                 accept="image/png, image/jpeg, image/webp"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                onChange={onImageSelect}
+                onChange={handleFileChange}
                 disabled={images.length >= 8}
               />
 
@@ -119,7 +158,7 @@ export default function ProductMedia({
                 <ImagePlus size={32} />
               </div>
               <p className="text-sm font-bold text-gray-600 group-hover:text-brand">Upload Image</p>
-              <p className="text-xs text-gray-400 mt-1">or drag & drop</p>
+              <p className="text-xs text-gray-400 mt-1">Single file to crop</p>
             </label>
           )}
         </div>
@@ -131,6 +170,14 @@ export default function ProductMedia({
           </div>
         )}
       </div>
+
+      <ImageCropper
+        open={!!cropImage}
+        onOpenChange={handleCropCancel}
+        imageSrc={cropImage}
+        onCropComplete={handleCropComplete}
+        aspect={4 / 5}
+      />
     </section>
   );
 }

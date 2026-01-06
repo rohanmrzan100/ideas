@@ -1,9 +1,12 @@
 'use client';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 
 export default function Home() {
-
+  useEffect(() => {
+    window.location.href = '/dashboard';
+  }, []);
   return (
     <main className="min-h-screen bg-gray-50/30 pb-20">
       {/* Product Grid Section */}

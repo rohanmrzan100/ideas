@@ -138,27 +138,25 @@ export default function EditProductPage() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      if (productImages.length + newFiles.length > 8) {
-        setUploadError('You can only upload up to 8 images.');
-        return;
-      }
-      setUploadError(null);
-
-      const newImageStates: ProductImageState[] = newFiles.map((file) => {
-        const tempId = Math.random().toString(36).substring(7);
-        uploadFileToBackend(file, tempId);
-        return {
-          id: tempId,
-          file,
-          previewUrl: URL.createObjectURL(file),
-          status: 'uploading',
-        };
-      });
-      setProductImages((prev) => [...prev, ...newImageStates]);
+  // UPDATED: Now accepts files array
+  const handleImagesAdded = (files: File[]) => {
+    if (productImages.length + files.length > 8) {
+      setUploadError('You can only upload up to 8 images.');
+      return;
     }
+    setUploadError(null);
+
+    const newImageStates: ProductImageState[] = files.map((file) => {
+      const tempId = Math.random().toString(36).substring(7);
+      uploadFileToBackend(file, tempId);
+      return {
+        id: tempId,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        status: 'uploading',
+      };
+    });
+    setProductImages((prev) => [...prev, ...newImageStates]);
   };
 
   const removeImage = (id: string) => {
@@ -256,7 +254,7 @@ export default function EditProductPage() {
               images={productImages}
               uploadError={uploadError}
               availableColors={availableColors}
-              onImageSelect={handleImageSelect}
+              onImagesAdded={handleImagesAdded}
               onRemoveImage={removeImage}
               onAssignColor={handleAssignColor}
             />
