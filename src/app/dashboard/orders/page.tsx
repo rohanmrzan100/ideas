@@ -1,27 +1,31 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Loader2, Package, TrendingUp } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { AlertCircle, Loader2, Package, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 // API & Store
-import { fetchShopOrders, Order, OrderStatus } from '@/api/orders';
+import { fetchShopOrders, Order, OrderStatus, updateOrderStatus } from '@/api/orders';
 import { useAppSelector } from '@/store/hooks';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Custom Components
 import { OrderTable } from '@/components/orders/order-table';
 import { OrderToolbar } from '@/components/orders/order-toolbar';
 import { OrderDetailsSheet } from '@/components/orders/OrderDetailSheet';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function OrderPage() {
   const activeShopId = useAppSelector((s) => s.app.activeShopId) ?? '';
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   // Sheet State
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-
+  const queryClient = useQueryClient();
   const {
     data: orders = [],
     isLoading,
@@ -32,34 +36,53 @@ export default function OrderPage() {
     queryFn: () => fetchShopOrders(activeShopId),
     enabled: !!activeShopId,
     refetchOnWindowFocus: false,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 30000,
   });
 
-  // Enhanced filter logic with memoization
+  // Filter Logic
   const filteredOrders = useMemo(() => {
-    if (!searchTerm.trim()) return orders;
+    let result = orders;
 
-    const lowerSearch = searchTerm.toLowerCase();
-    return orders.filter((order: Order) => {
-      const customerName = order.customer_name?.toLowerCase() || '';
-      const orderId = order.id.toLowerCase();
-      const customerPhone = order.customer_phone || '';
+    // 1. Status Filter
+    if (statusFilter !== 'ALL') {
+      result = result.filter((o) => o.status === statusFilter);
+    }
 
-      return (
-        customerName.includes(lowerSearch) ||
-        orderId.includes(lowerSearch) ||
-        customerPhone.includes(lowerSearch)
-      );
-    });
-  }, [orders, searchTerm]);
+    // 2. Search Filter
+    if (searchTerm.trim()) {
+      const lowerSearch = searchTerm.toLowerCase();
+      result = result.filter((order) => {
+        const name = (order.recipient_name || order.recipient_name || '').toLowerCase();
+        const id = order.id.toLowerCase();
+        const phone = (order.recipient_phone || order.recipient_phone || '').toLowerCase();
+        return (
+          name.includes(lowerSearch) || id.includes(lowerSearch) || phone.includes(lowerSearch)
+        );
+      });
+    }
 
-  // Calculate order statistics
+    return result;
+  }, [orders, searchTerm, statusFilter]);
+
+  // Bulk Actions
+  const handleSelectOrder = (id: string) => {
+    setSelectedOrders((prev) => (prev.includes(id) ? prev.filter((o) => o !== id) : [...prev, id]));
+  };
+
+  const handleSelectAll = (ids: string[]) => {
+    setSelectedOrders(ids);
+  };
+
+  const handleBulkAction = (action: string) => {
+    toast.info(`Bulk ${action} for ${selectedOrders.length} orders (Not implemented in API yet)`);
+    // Here you would call a mutation to update status for all selected IDs
+    setSelectedOrders([]);
+  };
+
   const stats = useMemo(() => {
     const pending = orders.filter((o) => o.status === OrderStatus.PENDING).length;
     const processing = orders.filter((o) => o.status === OrderStatus.CONFIRMED).length;
-    const completed = orders.filter((o) => o.status === OrderStatus.DELIVERED).length;
-
-    return { pending, processing, completed };
+    return { pending, processing };
   }, [orders]);
 
   const handleOpenSheet = (order: Order) => {
@@ -69,19 +92,31 @@ export default function OrderPage() {
 
   const handleCloseSheet = (open: boolean) => {
     setIsSheetOpen(open);
-    if (!open) {
-      // Small delay before clearing to allow smooth animation
-      setTimeout(() => setSelectedOrder(null), 300);
-    }
+    if (!open) setTimeout(() => setSelectedOrder(null), 300);
   };
+
+  async function onStatusChange(order_id: string, orderStatus: OrderStatus) {
+    toast.promise(
+      async () => {
+        await updateOrderStatus(order_id, orderStatus);
+        // Refresh data to show new status in UI
+        await queryClient.invalidateQueries({ queryKey: ['shop-orders'] });
+      },
+      {
+        loading: 'Updating status...',
+        success: 'Order status updated!',
+        error: 'Failed to update status',
+      },
+    );
+  }
 
   return (
     <div className="space-y-6 p-1 pb-8">
-      {/* Enhanced Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
               <Package className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -91,89 +126,98 @@ export default function OrderPage() {
           </div>
         </div>
 
-        {/* Enhanced Stats Cards */}
+        {/* Stats */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="px-3 py-1.5 text-sm font-medium bg-white hover:bg-gray-50 transition-colors border-gray-300"
-          >
-            <span className="text-gray-600">Total:</span>
-            <span className="ml-1.5 font-bold text-gray-900">{orders.length}</span>
+          <Badge variant="outline" className="px-3 py-1.5 text-sm font-medium bg-white">
+            Total: {orders.length}
           </Badge>
-
           {stats.pending > 0 && (
             <Badge
               variant="outline"
-              className="px-3 py-1.5 text-sm font-medium bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors"
+              className="px-3 py-1.5 text-sm font-medium bg-amber-50 border-amber-200 text-amber-700"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 animate-pulse" />
               Pending: {stats.pending}
-            </Badge>
-          )}
-
-          {stats.processing > 0 && (
-            <Badge
-              variant="outline"
-              className="px-3 py-1.5 text-sm font-medium bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors"
-            >
-              <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
-              Processing: {stats.processing}
             </Badge>
           )}
         </div>
       </div>
 
-      {/* Main Content Card with improved styling */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col relative min-h-[600px] transition-shadow hover:shadow-md">
-        <OrderToolbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+      {/* Main Content */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col relative min-h-150">
+        {/* Bulk Action Bar (Overlay) */}
+        {selectedOrders.length > 0 && (
+          <div className="absolute top-0 left-0 right-0 z-10 bg-blue-600 text-white p-2 flex items-center justify-between animate-in slide-in-from-top-2">
+            <div className="px-4 font-bold text-sm">{selectedOrders.length} selected</div>
+            <div className="flex items-center gap-2 px-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => handleBulkAction('Ship')}
+                className="h-8 text-xs"
+              >
+                Mark Shipped
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleBulkAction('Delete')}
+                className="h-8 text-xs"
+              >
+                <Trash2 size={12} className="mr-1" /> Delete
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedOrders([])}
+                className="h-8 text-xs text-white hover:text-blue-100 hover:bg-blue-700"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {/* Enhanced Loading State */}
+        <OrderToolbar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm z-20">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-blue-100 rounded-full" />
-              <Loader2 size={40} className="absolute top-2 left-2 animate-spin text-blue-600" />
-            </div>
-            <p className="text-sm font-medium text-gray-700 mt-4">Syncing orders...</p>
-            <p className="text-xs text-gray-500 mt-1">This won&apos;t take long</p>
+            <Loader2 size={40} className="animate-spin text-blue-600" />
           </div>
         )}
 
-        {/* Enhanced Error State */}
         {isError && (
-          <div className="flex-1 flex flex-col items-center justify-center p-12">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4 shadow-sm">
-              <AlertCircle size={32} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Failed to load orders</h3>
-            <p className="text-sm text-gray-500 text-center max-w-md">
-              {error instanceof Error ? error.message : 'An unexpected error occurred'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-            >
-              Retry
-            </button>
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <AlertCircle size={32} className="text-red-500 mb-2" />
+            <p>Failed to load orders</p>
           </div>
         )}
 
-        {/* Order Table */}
         {!isLoading && !isError && (
           <div className="flex-1">
             <OrderTable
+              onStatusChange={onStatusChange}
               orders={filteredOrders}
               isLoading={isLoading}
               searchTerm={searchTerm}
+              selectedOrders={selectedOrders}
+              onSelectOrder={handleSelectOrder}
+              onSelectAll={handleSelectAll}
               onView={handleOpenSheet}
               onEdit={handleOpenSheet}
-              onClearFilter={() => setSearchTerm('')}
+              onClearFilter={() => {
+                setSearchTerm('');
+                setStatusFilter('ALL');
+              }}
             />
           </div>
         )}
       </div>
 
-      {/* Enhanced Order Details Sheet */}
       <OrderDetailsSheet order={selectedOrder} open={isSheetOpen} onOpenChange={handleCloseSheet} />
     </div>
   );

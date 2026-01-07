@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '@/lib/constants';
+import { Product, Shop } from './products';
 
 // --- Backend Types ---
 export enum OrderStatus {
@@ -26,42 +27,6 @@ export type Area = {
   pickup_available: boolean;
 };
 
-// Represents the raw JSON coming from NestJS
-export interface BackendOrder {
-  id: string;
-  shop_id: string;
-  product_id: string;
-  recipient_name: string;
-  recipient_phone: string;
-  recipient_address: string;
-  recipient_city: number;
-  recipient_zone: number;
-  item_quantity: number;
-  item_description: string | null;
-  amount_to_collect: number;
-  delivery_consignment_id: string | null;
-  status: OrderStatus;
-  created_at: string;
-  updated_at: string;
-  shop?: {
-    id: string;
-    name: string;
-    owner_id: string;
-  };
-  product?: {
-    id: string;
-    name: string;
-    price: number;
-    open_graph_image: string | null;
-    productImages: {
-      id: string;
-      url: string;
-      position: number;
-      color?: string;
-    }[];
-  };
-}
-
 // Exactly matches 'CreateOrderDto' in NestJS
 export interface CreateOrderDto {
   shop_id: string;
@@ -83,43 +48,24 @@ export type UpdateOrderDto = Partial<CreateOrderDto> & {
 
 // --- Frontend Types ---
 
-export interface OrderItemDetail {
-  size: string;
-  color: string;
-  quantity: number;
-}
-
 export interface Order {
   id: string;
   shop_id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_district: string; // Kept for legacy compatibility
-  customer_location: string;
-
-  // RAW Fields for Editing
+  product_id: string;
+  recipient_name: string;
+  recipient_phone: string;
+  recipient_address: string;
   recipient_city: number;
   recipient_zone: number;
+  item_quantity: number;
   item_description: string;
-
-  // Legacy/Fallback fields
-  size: string;
-  color: string;
-
-  // New Array for Multi-Variant support
-  items: OrderItemDetail[];
-
-  quantity: number;
-  total_price: number;
-  payment_method: 'COD' | 'QR';
-  status: OrderStatus;
+  amount_to_collect: string;
+  delivery_consignment_id: string | null;
+  status: string;
   created_at: string;
-  product?: {
-    name: string;
-    price: number;
-    image?: string;
-    productImages?: { url: string; color?: string }[];
-  };
+  updated_at: string;
+  shop: Shop;
+  product: Product;
 }
 
 export type CreateOrderPayload = {
@@ -207,88 +153,23 @@ export async function fetchShopOrders(shopId: string): Promise<Order[]> {
     throw new Error('Failed to fetch orders');
   }
 
-  const result: BackendOrder[] = await response.json();
+  const result: Order[] = await response.json();
+  return result;
+}
 
-  return result.map((order) => {
-    let items: OrderItemDetail[] = [];
-    let size = '-';
-    let color = '-';
-    const desc = order.item_description || '';
-
-    // Parsing logic (same as before)
-    if (desc.includes(',')) {
-      const parts = desc.split(',');
-      items = parts.map((part) => {
-        const trimmed = part.trim();
-        const [qtyStr, variantStr] = trimmed.split('x ');
-        if (!variantStr) return { quantity: 1, color: '?', size: '?' };
-        const [c, s] = variantStr.split('/');
-        return {
-          quantity: Number(qtyStr) || 1,
-          color: c ? c.trim() : '-',
-          size: s ? s.trim() : '-',
-        };
-      });
-      size = 'Mixed';
-      color = 'Mixed';
-    } else if (desc.includes('|')) {
-      const parts = desc.split('|');
-      let parsedSize = '-';
-      let parsedColor = '-';
-      parts.forEach((p: string) => {
-        const cleanP = p.trim();
-        if (cleanP.startsWith('Size:')) parsedSize = cleanP.split(':')[1].trim();
-        if (cleanP.startsWith('Color:')) parsedColor = cleanP.split(':')[1].trim();
-      });
-      size = parsedSize;
-      color = parsedColor;
-      items.push({ quantity: order.item_quantity, color: parsedColor, size: parsedSize });
-    } else if (desc.includes('x ') && desc.includes('/')) {
-      const [qtyStr, variantStr] = desc.trim().split('x ');
-      const [c, s] = variantStr.split('/');
-      items.push({ quantity: Number(qtyStr), color: c.trim(), size: s.trim() });
-      size = s.trim();
-      color = c.trim();
-    } else {
-      items.push({ quantity: order.item_quantity, color: '-', size: '-' });
-    }
-
-    const productImages =
-      order.product?.productImages?.map((img) => ({
-        url: img.url,
-        color: img.color,
-      })) || [];
-    const mainImage = productImages[0]?.url || order.product?.open_graph_image || '';
-
-    return {
-      id: order.id,
-      shop_id: order.shop_id,
-      customer_name: order.recipient_name,
-      customer_phone: order.recipient_phone,
-      customer_district: 'Nepal', // Placeholder
-      customer_location: order.recipient_address,
-
-      // MAPPED RAW FIELDS
-      recipient_city: order.recipient_city,
-      recipient_zone: order.recipient_zone,
-      item_description: desc,
-
-      size: size,
-      color: color,
-      items: items,
-      quantity: order.item_quantity,
-      total_price: Number(order.amount_to_collect),
-      payment_method: 'COD',
-      status: order.status,
-      created_at: order.created_at,
-      product: {
-        name: order.product?.name || 'Unknown Product',
-        price: Number(order.product?.price || 0),
-        image: mainImage,
-        productImages: productImages,
-      },
-    };
+// NEW: Fetch Single Order By ID
+export async function fetchOrderById(orderId: string): Promise<Order> {
+  const response = await fetch(`${BACKEND_URL}/api/v1/orders/${orderId}`, {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
   });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch order details');
+  }
+  const result: Order = await response.json();
+  return result;
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {

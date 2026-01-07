@@ -12,25 +12,183 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDate, getPlanColor } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/app.slice';
 import {
   BarChart2,
-  Clock,
-  Crown,
+  Bell,
+  ChevronDown,
+  Globe,
   Home,
   LogOut,
+  Menu,
   Package,
-  PlusCircle,
+  Palette,
+  Plus,
   Settings,
   ShoppingBag,
+  Store,
+  Ticket,
+  UserCircle,
+  Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+// --- Sidebar Content ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SidebarContent = ({ isActive, handleLogout }: any) => (
+  <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    {/* Logo Area */}
+    <div className="h-16 flex items-center px-6 border-b border-gray-100">
+      <div className="flex items-center gap-2 font-bold text-xl text-gray-900 tracking-tight">
+        <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white">
+          <Store size={18} />
+        </div>
+        <span>InstaShop</span>
+      </div>
+    </div>
+
+    {/* Navigation */}
+    <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+      <NavItem
+        icon={<Home size={20} />}
+        label="Dashboard"
+        href="/dashboard"
+        active={isActive('/dashboard')}
+      />
+
+      <div className="px-3 pt-6 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+        Inventory
+      </div>
+      <NavItem
+        icon={<Package size={20} />}
+        label="My Products"
+        href="/dashboard/my-products"
+        active={isActive('/dashboard/my-products')}
+      />
+      <NavItem
+        icon={<Plus size={20} />}
+        label="Add Product"
+        href="/dashboard/product"
+        active={isActive('/dashboard/product')}
+      />
+
+      <div className="px-3 pt-6 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+        Business
+      </div>
+      <NavItem
+        icon={<ShoppingBag size={20} />}
+        label="Orders"
+        href="/dashboard/orders"
+        active={isActive('/dashboard/orders')}
+      />
+      <NavItem
+        icon={<Users size={20} />}
+        label="Customers"
+        href="/dashboard/customers"
+        active={isActive('/dashboard/customers')}
+      />
+      <NavItem
+        icon={<Ticket size={20} />}
+        label="Discounts"
+        href="/dashboard/discounts"
+        active={isActive('/dashboard/discounts')}
+      />
+      <NavItem
+        icon={<BarChart2 size={20} />}
+        label="Analytics"
+        href="/dashboard/analytics"
+        active={isActive('/dashboard/analytics')}
+      />
+
+      <div className="px-3 pt-6 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+        Configuration
+      </div>
+      <NavItem
+        icon={<Palette size={20} />}
+        label="Store Design"
+        href="/dashboard/design"
+        active={isActive('/dashboard/design')}
+      />
+      <NavItem
+        icon={<Settings size={20} />}
+        label="Settings"
+        href="/dashboard/settings"
+        active={isActive('/dashboard/settings')}
+      />
+    </div>
+
+    {/* Footer Actions */}
+    <div className="p-4 border-t border-gray-200">
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors">
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be returned to the login screen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={handleLogout}>
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  </div>
+);
+
+// --- Top Header Component ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TopHeader = ({ user }: any) => (
+  <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-20">
+    {/* Left: Breadcrumb or Shop Switcher */}
+    <div className="flex items-center gap-4">
+      <ShopSwitcher />
+    </div>
+
+    {/* Right: Actions & Profile */}
+    <div className="flex items-center gap-4">
+      <Button variant="ghost" size="sm" className="hidden md:flex gap-2 text-gray-600">
+        <Globe size={16} /> EN <ChevronDown size={14} />
+      </Button>
+      <Button className="bg-brand hover:bg-brand-primary/90 text-white shadow-sm font-semibold h-9">
+        New Order
+      </Button>
+      <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block" />
+      <Button variant="ghost" size="icon" className="relative text-gray-500">
+        <Bell size={20} />
+        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+      </Button>
+
+      <div className="flex items-center gap-3 pl-2 cursor-pointer">
+        <div className="text-right hidden md:block">
+          <p className="text-sm font-bold text-gray-900 leading-none">{user?.name}</p>
+          <p className="text-[11px] text-gray-500 mt-1">{user?.role || 'Seller'}</p>
+        </div>
+        <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 overflow-hidden relative">
+          <Image src="https://github.com/shadcn.png" alt="User" fill className="object-cover" />
+        </div>
+      </div>
+    </div>
+  </header>
+);
+
+// --- Main Layout ---
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
@@ -39,202 +197,71 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   const user = useAppSelector((s) => s.app.user);
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuth && !isRestoringSession) {
       router.push('/sign-in');
     }
   }, [isAuth, router, isRestoringSession]);
+
   const handleLogout = async () => {
     dispatch(logout());
     await Logout();
     router.push('/sign-in');
   };
-  if (!isAuth && !isRestoringSession) {
-    return <>Please log in first</>;
-  }
+
+  if (!isAuth && !isRestoringSession) return null;
+
   return (
-    <div className="min-h-screen bg-[#F3F2EF] font-sans flex justify-center p-0 md:p-6">
-      <div className="w-full max-w-400 flex flex-col md:flex-row gap-6">
-        {/* --- LEFT SIDEBAR (Navigation) --- */}
-        <aside className="hidden md:flex flex-col w-80 shrink-0 gap-4">
-          {/* Profile Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
-            {/* Banner Image Container */}
-            <div className="relative h-24 w-full bg-gray-100">
-              <Image src="/ecommercebg.jpg" alt="banner" fill className="object-cover" priority />
-            </div>
+    <div className="flex h-screen bg-[#F8F9FA] font-sans overflow-hidden">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:block w-64 shrink-0 h-full">
+        <SidebarContent user={user} isActive={isActive} handleLogout={handleLogout} />
+      </aside>
 
-            <div className="px-4 pb-4 text-center -mt-8 relative z-10">
-              <div className="relative w-16 h-16 mx-auto rounded-full border-2 border-white shadow-md overflow-hidden bg-white">
-                <Image
-                  src="https://github.com/shadcn.png"
-                  alt="Profile"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              {!user && <Skeleton className="h-4 w-full mt-2" />}
-              <h3 className="mt-2 font-bold text-gray-900 text-lg">{user?.name}</h3>
-              {user && (
-                <div className="flex flex-col items-center gap-2 mt-2 mb-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wide ${getPlanColor(
-                      user.plan,
-                    )}`}
-                  >
-                    <Crown size={12} />
-                    {user.plan || 'Free'} Plan
-                  </span>
-
-                  {/* Show Expiry if applicable */}
-                  {(user.trial_ends_at || user.subscription_ends_at) && (
-                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
-                      <Clock size={10} />
-                      {user.subscription_status === 'trialing'
-                        ? `Trial ends ${formatDate(user.trial_ends_at ?? '')}`
-                        : `Renews ${formatDate(user.subscription_ends_at ?? '')}`}
-                    </span>
-                  )}
-                </div>
-              )}
-              {/* Shop Switcher */}
-              <ShopSwitcher />
-            </div>
-
-            <div className="border-t border-gray-100 p-4 bg-gray-50/50">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-500">Profile views</span>
-                <span className="font-semibold text-brand">52</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Post impressions</span>
-                <span className="font-semibold text-brand">1.2k</span>
-              </div>
-            </div>
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between bg-white px-4 h-16 border-b border-gray-200">
+          <div className="flex items-center gap-2 font-bold text-lg text-gray-900">
+            <Store className="text-brand" />
+            <span>InstaShop</span>
           </div>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[80%]">
+              <SidebarContent user={user} isActive={isActive} handleLogout={handleLogout} />
+            </SheetContent>
+          </Sheet>
+        </div>
 
-          {/* Navigation Menu */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-2">
-            <nav className="flex flex-col">
-              <NavItem
-                icon={<Home size={20} />}
-                label="Dashboard"
-                href="/dashboard"
-                active={isActive('/dashboard')}
-              />
-              <NavItem
-                icon={<Package size={20} />}
-                label="My Products"
-                href="/dashboard/my-products"
-                active={isActive('/dashboard/my-products')}
-              />
-              <NavItem
-                icon={<PlusCircle size={20} />}
-                label="Add Product"
-                href="/dashboard/product"
-                active={isActive('/dashboard/product')}
-              />
-              <NavItem
-                icon={<ShoppingBag size={20} />}
-                label="Orders"
-                href="/dashboard/orders"
-                badge="3"
-                active={isActive('/dashboard/orders')}
-              />
-              <NavItem
-                icon={<BarChart2 size={20} />}
-                label="Analytics"
-                href="/dashboard/analytics"
-                active={isActive('/dashboard/analytics')}
-              />
-              <div className="my-2 border-b border-gray-100" />
-              <NavItem
-                icon={<Settings size={20} />}
-                label="Settings"
-                href="/dashboard/settings"
-                active={isActive('/dashboard/settings')}
-              />
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="flex w-full items-center gap-4 px-5 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all">
-                    <LogOut size={20} />
-                    <span>Logout</span>
-                  </button>
-                </AlertDialogTrigger>
+        {/* Desktop Header */}
+        <div className="hidden md:block">
+          <TopHeader user={user} />
+        </div>
 
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will log you out of your account and redirect you to the sign-in page.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              {/* 
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-4 px-5 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
-              >
-                <LogOut size={20} />
-                <span>Logout</span>
-              </button> */}
-            </nav>
-          </div>
-        </aside>
-
-        {/* --- MAIN CONTENT AREA --- */}
-        <main className="flex-1 min-w-0">{children}</main>
-
-        {/* --- RIGHT SIDEBAR (Widgets - Optional context) --- */}
-        {/* <aside className="hidden xl:block w-72 shrink-0 space-y-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h4 className="font-bold text-gray-900 mb-3 text-sm">Top Selling Items</h4>
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-3 items-center">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-gray-900">Winter Jacket</p>
-                    <p className="text-[10px] text-gray-500">23 Sold this week</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="w-full mt-4 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 rounded-lg transition">
-              View all analytics
-            </button>
-          </div>
-        </aside> */}
+        {/* Scrollable Content Area */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth">{children}</main>
       </div>
     </div>
   );
 }
 
+// Helper Nav Item
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const NavItem = ({ icon, label, href, active, badge }: any) => (
   <Link
     href={href}
-    className={`flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-all relative
-      ${
-        active
-          ? 'text-brand border-l-4 border-brand bg-brand/5'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'
-      }`}
+    className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg text-sm font-medium transition-all relative group
+      ${active ? 'bg-brand/5 text-brand' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
   >
-    {icon}
+    <span className={active ? 'text-brand' : 'text-gray-400 group-hover:text-gray-600'}>
+      {icon}
+    </span>
     <span>{label}</span>
     {badge && (
       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">

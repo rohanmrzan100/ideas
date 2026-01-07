@@ -85,3 +85,7 @@
 .swiper-pagination-bullet-active {
   background-color: var(--brand-primary) !important;
 }
+
+button {
+  cursor: pointer;
+}

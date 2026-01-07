@@ -2,7 +2,7 @@ import { Order } from '@/api/orders';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { OrderPreview } from './order-preview';
-import { OrderEditForm } from './order-edit';
+import EditOrderPage from './order-edit';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface OrderDetailsSheetProps {
@@ -19,15 +19,15 @@ export function OrderDetailsSheet({ order, open, onOpenChange }: OrderDetailsShe
     if (open) {
       setIsEditing(false);
     }
-  }, [open, order?.id]); // Added order.id to dependency
+  }, [open, order?.id]);
 
   if (!order) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:max-w-2xl p-0 overflow-hidden  border-l border-gray-200"
         side="right"
+        className="w-full sm:max-w-2xl p-0 overflow-hidden border-l border-gray-200 flex flex-col h-full"
       >
         <AnimatePresence mode="wait">
           {isEditing ? (
@@ -39,7 +39,7 @@ export function OrderDetailsSheet({ order, open, onOpenChange }: OrderDetailsShe
               transition={{ duration: 0.2 }}
               className="h-full"
             >
-              <OrderEditForm
+              <EditOrderPage
                 order={order}
                 onCancel={() => setIsEditing(false)}
                 onSuccess={() => {

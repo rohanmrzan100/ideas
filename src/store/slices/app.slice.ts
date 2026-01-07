@@ -1,7 +1,7 @@
 import { PLAN_TYPE, ROLES, SUBSCRIPTION_STATUS } from '@/lib/enums';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface UserInfo {
+interface UserInfo {
   name: string;
   role: ROLES;
   id: string;
