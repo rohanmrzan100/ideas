@@ -17,7 +17,7 @@ export type ProductImages = {
   cloudinary_public_id?: string;
   url: string;
   position: number;
-  color?: string; // <--- ADDED THIS FIELD
+  color?: string;
 };
 
 export interface Shop {

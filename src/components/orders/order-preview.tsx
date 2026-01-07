@@ -3,7 +3,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { CreditCard, Edit2, MapPin, Package, User } from 'lucide-react';
+import {
+  CreditCard,
+  Edit2,
+  MapPin,
+  Package,
+  Printer,
+  User,
+  Calendar,
+  Phone,
+  Home,
+} from 'lucide-react';
 import Image from 'next/image';
 import { OrderStatusBadge } from './order-status-badge';
 
@@ -12,189 +22,283 @@ interface OrderPreviewProps {
   onEdit: () => void;
 }
 
+type ParsedItem = {
+  quantity: number;
+  color: string;
+  size: string;
+};
+
 export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
-  // Helper to find specific image for a variant color
+  // Parsing Logic
+  const items: ParsedItem[] = (() => {
+    if (!order.item_description) return [];
+    try {
+      const parsed = order.item_description
+        .split(',')
+        .map((part) => {
+          const match = part.trim().match(/(\d+)x\s*([^/]+)\/(.+)/);
+          if (match)
+            return {
+              quantity: parseInt(match[1], 10),
+              color: match[2].trim(),
+              size: match[3].trim(),
+            };
+          return null;
+        })
+        .filter((item): item is ParsedItem => item !== null);
+      return parsed.length > 0 ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+
   const findImageForColor = (colorName: string) => {
     if (!order.product?.productImages) return '';
-
-    // Try to find an exact color match (case insensitive)
     const exact = order.product.productImages.find(
       (img) => img.color?.toLowerCase() === colorName.toLowerCase(),
     );
-
-    if (exact) return exact.url;
-
-    // Fallback: If no specific color image, use the main product image or the first one
-    return order.product.productImages[0]?.url || order.product.image || '';
+    return exact ? exact.url : order.product.productImages[0]?.url || '';
   };
 
-  // Determine the main "Hero" image (uses the first item's color, or default)
-  const mainHeroImage =
-    order.items && order.items.length > 0
-      ? findImageForColor(order.items[0].color)
-      : order.product?.image || '';
+  const formatCurrency = (amount: number | string) => {
+    return new Intl.NumberFormat('en-NP', {
+      style: 'currency',
+      currency: 'NPR',
+      maximumFractionDigits: 0,
+    }).format(Number(amount));
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 md:space-y-8 pb-32">
-      {/* --- Header Section --- */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:items-center">
-        <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 tracking-tight">
-            Order #{order.id.slice(-6).toUpperCase()}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Placed on {format(new Date(order.created_at), 'PPP p')}
-          </p>
-        </div>
-        <Button size="sm" variant="outline" onClick={onEdit} className="gap-2 w-full sm:w-auto">
-          <Edit2 size={14} /> Edit Order
-        </Button>
-      </div>
-
-      {/* --- Status Banner --- */}
-      <div className="flex justify-between items-center p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
-        <span className="text-sm font-semibold text-gray-600">Current Status</span>
-        <OrderStatusBadge status={order.status} />
-      </div>
-
-      {/* --- Product Hero Card --- */}
-      <div className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-100 rounded-xl shadow-sm bg-white">
-        {/* Large Hero Image */}
-        <div className="w-full sm:w-24 h-48 sm:h-32 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden relative shrink-0">
-          {mainHeroImage ? (
-            <Image src={mainHeroImage} alt="Product Hero" fill className="object-cover" />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-300">
-              <Package size={24} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 print:bg-white">
+      <div className="max-w-4xl mx-auto p-3 md:p-4 space-y-4 pb-20 print:p-0 print:space-y-4 print:pb-0">
+        {/* Header Section - Enhanced */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 print:shadow-none print:border-none">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:items-center">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-50 rounded-lg print:hidden">
+                  <Package className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                    #{order.id.slice(-6).toUpperCase()}
+                  </h2>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                    <Calendar className="w-3 h-3 print:hidden" />
+                    <span>{format(new Date(order.created_at), 'PPP, p')}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Product Details */}
-        <div className="flex-1 py-1 space-y-2">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">
-              {order.product?.name}
-            </h3>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePrint}
+                className="gap-1.5 flex-1 sm:flex-none hover:bg-gray-50 transition-colors"
+              >
+                <Printer size={14} /> Print
+              </Button>
+              <Button
+                size="sm"
+                onClick={onEdit}
+                className="gap-1.5 flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Edit2 size={14} /> Edit
+              </Button>
+            </div>
           </div>
-          <Badge variant="secondary" className="text-xs font-medium w-fit">
-            Rs. {order.product?.price.toLocaleString()} / unit
-          </Badge>
+
+          {/* Status Banner - Improved */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 print:hidden">
+            <span className="text-xs font-semibold text-gray-700">Order Status</span>
+            <OrderStatusBadge status={order.status} />
+          </div>
         </div>
-      </div>
 
-      {/* --- Order Items List (The key part for showing both images) --- */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-          Order Items ({order.items.length})
-        </h4>
+        {/* Print Header */}
+        <div className="hidden print:block text-center border-b-2 pb-4 mb-6">
+          <h1 className="text-3xl font-bold mb-2">ORDER RECEIPT</h1>
+          <p className="text-lg">Order #{order.id}</p>
+          <p className="text-sm text-gray-600">{format(new Date(order.created_at), 'PPP')}</p>
+        </div>
 
-        <div className="space-y-3">
-          {order.items && order.items.length > 0 ? (
-            order.items.map((item, idx) => {
-              // DYNAMIC IMAGE LOGIC: Find image specifically for THIS item's color
-              const variantImage = findImageForColor(item.color);
+        {/* Order Items - Enhanced Card Design */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 print:shadow-none print:border">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-bold text-gray-900">Order Items</h3>
+            <Badge variant="secondary" className="text-xs font-semibold">
+              {totalItems} {totalItems === 1 ? 'item' : 'items'}
+            </Badge>
+          </div>
 
-              return (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:border-gray-300"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Variant Thumbnail */}
-                    <div className="w-14 h-14 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden relative shrink-0">
-                      {variantImage ? (
-                        <Image src={variantImage} alt={item.color} fill className="object-cover" />
-                      ) : (
-                        // Fallback: Show a color swatch if no image exists
-                        <div
-                          className="w-full h-full"
-                          style={{
-                            backgroundColor: item.color.toLowerCase() !== '-' ? item.color : '#eee',
-                          }}
-                        />
-                      )}
+          <div className="space-y-3">
+            {items.length > 0 ? (
+              items.map((item, idx) => {
+                const variantImage = findImageForColor(item.color);
+                const itemTotal = Number(order.product.price) * item.quantity;
+
+                return (
+                  <div
+                    key={idx}
+                    className="group relative flex items-center gap-3 p-3 rounded-lg border-2 border-gray-100 bg-gradient-to-br from-white to-gray-50 hover:border-blue-200 hover:shadow-sm transition-all duration-200 print:border print:shadow-none print:bg-white"
+                  >
+                    {/* Product Image */}
+                    <div className="relative w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 group-hover:border-blue-300 transition-colors">
+                      <Image src={variantImage} alt={item.color} fill className="object-cover" />
+                      <div className="absolute top-1 right-1 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-700 print:hidden">
+                        {item.color}
+                      </div>
                     </div>
 
-                    {/* Variant Details */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {/* Tiny Color Dot */}
-                        <span
-                          className="w-3 h-3 rounded-full border border-gray-300 shadow-sm"
-                          style={{
-                            backgroundColor:
-                              item.color.toLowerCase() !== '-' ? item.color : 'transparent',
-                          }}
-                        />
-                        <span className="text-gray-300">/</span>
-                        <span className="font-bold text-gray-900">{item.size}</span>
+                    {/* Item Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-medium text-gray-500 uppercase">
+                              Color:
+                            </span>
+                            <span className="text-xs font-semibold text-gray-900">
+                              {item.color}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-medium text-gray-500 uppercase">
+                              Size:
+                            </span>
+                            <span className="text-xs font-semibold text-gray-900">{item.size}</span>
+                          </div>
+                        </div>
+
+                        {/* Quantity Badge */}
+                        <div className="bg-blue-50 border-2 border-blue-200 px-2.5 py-1 rounded-md print:bg-transparent print:border-black shrink-0">
+                          <span className="text-[10px] font-medium text-gray-600 print:text-black">
+                            Qty
+                          </span>
+                          <span className="ml-1.5 text-sm font-bold text-blue-600 print:text-black">
+                            {item.quantity}
+                          </span>
+                        </div>
                       </div>
-                      {/* SKU or other details could go here */}
+
+                      {/* Price Row */}
+                      <div className="flex items-center justify-between pt-1.5 border-t border-gray-100">
+                        <span className="text-xs text-gray-600">
+                          {formatCurrency(order.product.price)} × {item.quantity}
+                        </span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {formatCurrency(itemTotal)}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                );
+              })
+            ) : (
+              <div className="p-4 text-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50">
+                <Package className="w-8 h-8 mx-auto mb-1 text-gray-400" />
+                <p className="text-xs text-gray-600">
+                  {order.item_description || 'No items in this order'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
-                  {/* Quantity Badge */}
-                  <span className="text-sm font-bold bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 min-w-[3rem] text-center">
-                    x {item.quantity}
-                  </span>
+        {/* Customer & Delivery Info Grid - Enhanced */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 print:grid-cols-2">
+          {/* Customer Info Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3 print:shadow-none print:border">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+              <div className="p-1.5 bg-purple-50 rounded-lg print:hidden">
+                <User className="w-4 h-4 text-purple-600" />
+              </div>
+              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Customer Details
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <User className="w-3.5 h-3.5 text-gray-400 mt-0.5 print:hidden" />
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Name</p>
+                  <p className="font-bold text-base text-gray-900">{order.recipient_name}</p>
                 </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-gray-500 italic">No detailed items found.</p>
-          )}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* --- Customer & Delivery Grid --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Customer Card */}
-        <div className="p-5 rounded-xl border border-gray-200 bg-white shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-gray-400 mb-1">
-            <User size={14} />
-            <span className="text-xs font-bold uppercase tracking-wider">Customer</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Phone className="w-3.5 h-3.5 text-gray-400 mt-0.5 print:hidden" />
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Phone</p>
+                  <p className="font-semibold text-sm text-gray-700">{order.recipient_phone}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-lg text-gray-900">{order.customer_name}</p>
-            <a
-              href={`tel:${order.customer_phone}`}
-              className="text-brand font-medium hover:underline block mt-1"
-            >
-              {order.customer_phone}
-            </a>
-          </div>
-        </div>
 
-        {/* Delivery Card */}
-        <div className="p-5 rounded-xl border border-gray-200 bg-white shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-gray-400 mb-1">
-            <MapPin size={14} />
-            <span className="text-xs font-bold uppercase tracking-wider">Delivery</span>
-          </div>
-          <div>
-            <p className="font-medium text-gray-900 leading-snug">{order.customer_location}</p>
-            <p className="text-sm text-gray-500 mt-1">{order.customer_district}</p>
+          {/* Delivery Info Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3 print:shadow-none print:border">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+              <div className="p-1.5 bg-green-50 rounded-lg print:hidden">
+                <MapPin className="w-4 h-4 text-green-600" />
+              </div>
+              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Delivery Address
+              </h3>
+            </div>
+            <div className="flex items-start gap-2">
+              <Home className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0 print:hidden" />
+              <p className="font-medium text-sm text-gray-700 leading-relaxed">
+                {order.recipient_address}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* --- Payment Footer --- */}
-      <div className="rounded-xl bg-gray-900 text-white overflow-hidden shadow-lg mt-auto">
-        <div className="p-5 flex justify-between items-center border-b border-gray-800">
-          <div className="flex items-center gap-2 text-gray-400">
-            <CreditCard size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Payment Method</span>
+        {/* Payment Summary - Enhanced */}
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg overflow-hidden print:bg-white print:border-2 print:border-black print:shadow-none">
+          <div className="p-4 space-y-3">
+            {/* Payment Method */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-700 print:border-gray-300">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-gray-800 rounded-lg print:hidden">
+                  <CreditCard className="w-4 h-4 text-gray-300" />
+                </div>
+                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider print:text-black">
+                  Payment Method
+                </span>
+              </div>
+              <Badge
+                variant="secondary"
+                className="bg-amber-500 text-white font-bold text-xs print:bg-transparent print:text-black print:border print:border-black"
+              >
+                Cash on Delivery
+              </Badge>
+            </div>
+
+            {/* Total Amount */}
+            <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-4 print:bg-transparent print:border-t-2 print:border-black">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5 print:text-gray-600">
+                    Total Amount
+                  </p>
+                  <p className="text-3xl font-extrabold text-white print:text-black">
+                    {formatCurrency(order.amount_to_collect)}
+                  </p>
+                </div>
+                <div className="p-2 bg-white/10 rounded-lg print:hidden">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="font-bold text-sm uppercase">{order.payment_method}</span>
-        </div>
-        <div className="p-5 flex justify-between items-center bg-gray-950/50">
-          <span className="font-medium text-lg text-gray-300">Total Amount</span>
-          <span className="font-extrabold text-2xl text-white">
-            Rs. {order.total_price.toLocaleString()}
-          </span>
         </div>
       </div>
     </div>
