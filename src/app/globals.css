@@ -89,3 +89,13 @@
 button {
   cursor: pointer;
 }
+@theme {
+  /* Color Palette */
+  /* Number 1 */
+  --color-pearl: #eae0c8;
+  --color-slategrey: #708090;
+/* Number 2 */
+  --color-yankeesblue: #102837;
+  --color-platinum: #e5e4e4;
+  --color-tealgreen:#4F8A8B;
+}
