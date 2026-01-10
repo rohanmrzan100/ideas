@@ -9,6 +9,8 @@ export interface Shop {
   updated_at: string;
   logo?: string;
   category?: string;
+  pathao_store_id?: string;
+  create_delivery_on_order?: boolean;
 }
 export async function fetchMyShops() {
   const response = await fetch(BACKEND_URL + '/api/v1/shops/mine', {

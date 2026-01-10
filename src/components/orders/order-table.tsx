@@ -9,9 +9,19 @@ import {
 } from '@/components/ui/select';
 import { formatCurrency, formatFullAddress } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar, CreditCard, Edit, Eye, MapPin, Package, ShoppingBag, User } from 'lucide-react';
+import {
+  Calendar,
+  CreditCard,
+  Edit,
+  Eye,
+  MapPin,
+  Package,
+  ShoppingBag,
+  Truck,
+  User,
+  XCircle,
+} from 'lucide-react';
 import Image from 'next/image';
-import { OrderStatusBadge } from './order-status-badge';
 
 interface OrderTableProps {
   orders: Order[];
@@ -24,6 +34,8 @@ interface OrderTableProps {
   onEdit: (order: Order) => void;
   onStatusChange: (id: string, status: OrderStatus) => void;
   onClearFilter: () => void;
+  onCreateDelivery: (id: string) => void;
+  onCancelDelivery: (id: string) => void;
 }
 
 export function OrderTable({
@@ -37,6 +49,8 @@ export function OrderTable({
   onEdit,
   onStatusChange,
   onClearFilter,
+  onCreateDelivery,
+  onCancelDelivery,
 }: OrderTableProps) {
   if (isLoading) return null;
 
@@ -68,13 +82,16 @@ export function OrderTable({
             <th className="px-6 py-3 min-w-70">Product</th>
             <th className="px-6 py-3 w-30">Total</th>
             <th className="px-6 py-3 w-35">Status</th>
-            <th className="px-6 py-3 w-25 text-right">Actions</th>
+            <th className="px-6 py-3 w-32 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {orders.length > 0 ? (
             orders.map((order) => {
               const isSelected = selectedOrders.includes(order.id);
+              const hasPathao = !!order.shop?.pathao_store_id;
+              const hasConsignment = !!order.delivery_consignment_id;
+
               return (
                 <tr
                   key={order.id}
@@ -121,8 +138,7 @@ export function OrderTable({
                   {/* 3. Product */}
                   <td className="px-6 py-4 align-top">
                     <div className="flex items-start gap-3">
-                      {/* UPDATED: Changed w-10 h-10 to w-16 h-16 (64px) */}
-                      <div className="w-32 h-32 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shrink-0 relative">
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden shrink-0 relative">
                         {order.product?.productImages?.[0] ? (
                           <Image
                             src={order.product.productImages[0].url}
@@ -131,7 +147,6 @@ export function OrderTable({
                             className="object-cover"
                           />
                         ) : (
-                          // UPDATED: Increased icon size and adjusted margin
                           <Package size={24} className="text-gray-400 m-auto mt-5" />
                         )}
                       </div>
@@ -200,11 +215,45 @@ export function OrderTable({
                   {/* 6. Actions */}
                   <td className="px-6 py-4 align-top text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {/* Delivery Buttons (Only if pathao_store_id exists) */}
+                      {hasPathao && !hasConsignment && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-green-600 hover:bg-green-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCreateDelivery(order.id);
+                          }}
+                          title="Create Delivery Request"
+                        >
+                          <Truck size={16} />
+                        </Button>
+                      )}
+
+                      {hasPathao && hasConsignment && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-green-600 hover:text-red-600 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCancelDelivery(order.id);
+                          }}
+                          title="Cancel Delivery Request"
+                        >
+                          <XCircle size={16} />
+                        </Button>
+                      )}
+
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-gray-400 hover:text-gray-900"
-                        onClick={() => onView(order)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onView(order);
+                        }}
                       >
                         <Eye size={16} />
                       </Button>
@@ -212,7 +261,10 @@ export function OrderTable({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-gray-400 hover:text-blue-600"
-                        onClick={() => onEdit(order)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(order);
+                        }}
                       >
                         <Edit size={16} />
                       </Button>

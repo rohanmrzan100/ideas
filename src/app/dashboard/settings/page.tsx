@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera, Loader2, Save, Store } from 'lucide-react';
+import { Camera, Loader2, Save, Store, Truck } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -22,6 +22,8 @@ import { toast } from 'sonner';
 type ShopFormValues = {
   name: string;
   category: string;
+  pathao_store_id?: string;
+  create_delivery_on_order: boolean;
 };
 
 const CATEGORIES = [
@@ -35,18 +37,33 @@ const CATEGORIES = [
 
 export default function SettingsPage() {
   const activeShopId = useAppSelector((s) => s.app.activeShopId);
-  const queryClient = useQueryClient();
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-
-  // Cropper State
-  const [cropImage, setCropImage] = useState<string | null>(null);
-
-  const { data: shops = [] } = useQuery({
+  const { data: shops = [], isLoading } = useQuery({
     queryKey: ['my-shops'],
     queryFn: fetchMyShops,
   });
 
-  const activeShop = shops.find((s: Shop) => s.id === activeShopId);
+  const activeShop: Shop = shops.find((s: Shop) => s.id === activeShopId);
+
+  // Wait for activeShop to load before rendering the form
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-brand" />
+      </div>
+    );
+  }
+
+  if (!activeShop) {
+    return <div className="p-8 text-center text-gray-500">Select a shop to manage settings</div>;
+  }
+
+  return <SettingsContent activeShop={activeShop} />;
+}
+
+function SettingsContent({ activeShop }: { activeShop: Shop }) {
+  const queryClient = useQueryClient();
+  const [logoPreview, setLogoPreview] = useState<string | null>(activeShop.logo || null);
+  const [cropImage, setCropImage] = useState<string | null>(null);
 
   const {
     register,
@@ -55,21 +72,27 @@ export default function SettingsPage() {
     watch,
     reset,
     formState: { isDirty },
-  } = useForm<ShopFormValues>();
+  } = useForm<ShopFormValues>({
+    defaultValues: {
+      name: activeShop.name,
+      category: activeShop.category || 'Clothing & Apparel',
+      pathao_store_id: activeShop.pathao_store_id || '',
+      create_delivery_on_order: false,
+    },
+  });
 
   useEffect(() => {
-    if (activeShop) {
-      reset({
-        name: activeShop.name,
-        category: activeShop.category || 'Clothing & Apparel',
-      });
-      setLogoPreview(activeShop.logo || null);
-    }
-  }, [activeShop, reset]);
+    reset({
+      name: activeShop.name,
+      category: activeShop.category || 'Clothing & Apparel',
+      pathao_store_id: activeShop.pathao_store_id || '',
+    });
+    setLogoPreview(activeShop.logo || null);
+  }, [activeShop.id, reset]); // Use activeShop.id as dependency
 
   // Mutations
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<Shop>) => updateShop(activeShopId!, data),
+    mutationFn: (data: Partial<Shop>) => updateShop(activeShop.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-shops'] });
       toast.success('Shop settings updated!');
@@ -82,11 +105,9 @@ export default function SettingsPage() {
   const uploadLogoMutation = useMutation({
     mutationFn: uploadShopLogo,
     onSuccess: async (url) => {
-      // Update the shop with the new logo URL
       await updateMutation.mutateAsync({ logo: url });
       setLogoPreview(url);
       toast.success('Logo updated successfully');
-      // Cleanup crop image url if exists
       if (cropImage) URL.revokeObjectURL(cropImage);
       setCropImage(null);
     },
@@ -100,7 +121,6 @@ export default function SettingsPage() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setCropImage(URL.createObjectURL(file));
-      // clear input
       e.target.value = '';
     }
   };
@@ -117,12 +137,8 @@ export default function SettingsPage() {
   };
 
   const onSubmit = (data: ShopFormValues) => {
-    if (!activeShopId) return;
     updateMutation.mutate(data);
   };
-
-  if (!activeShop)
-    return <div className="p-8 text-center text-gray-500">Select a shop to manage settings</div>;
 
   if (updateMutation.isPending) {
     return (
@@ -141,7 +157,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex flex-col gap-8">
-        {/* Left Col: Logo */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center">
           <div className="relative w-32 h-32 mb-4 group cursor-pointer">
             <div className="w-full h-full rounded-full overflow-hidden border-4 border-gray-100 bg-gray-50 relative">
@@ -153,7 +168,6 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Upload Overlay */}
               <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <input
                   type="file"
@@ -173,7 +187,7 @@ export default function SettingsPage() {
           <h3 className="font-bold text-gray-900">{activeShop.name}</h3>
           <p className="text-xs text-gray-500 mt-1">Click image to change logo</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 w-full  space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 w-full space-y-6">
             <div className="space-y-2 text-left">
               <label className="text-sm font-semibold text-gray-700">Store Name</label>
               <Input
@@ -183,7 +197,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="space-y-2 text-left w-full ">
+            <div className="space-y-2 text-left w-full">
               <label className="text-sm font-semibold text-gray-700">Category</label>
               <Select
                 value={watch('category')}
@@ -201,6 +215,43 @@ export default function SettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="pt-4 border-t border-gray-100">
+              <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <Truck size={16} className="text-red-600" /> Delivery Integration (Pathao)
+              </h4>
+              <div className="space-y-4">
+                <div className="space-y-2 text-left">
+                  <label className="text-xs font-semibold text-gray-600">Pathao Store ID</label>
+                  <Input
+                    disabled={updateMutation.isPending}
+                    {...register('pathao_store_id')}
+                    placeholder="e.g. 12345"
+                    className="h-11 bg-gray-50 border-gray-200"
+                  />
+                  <p className="text-[10px] text-gray-400">
+                    Required to create consignment orders with Pathao.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 p-4 bg-gray-50">
+                  <div className="space-y-0.5 text-left">
+                    <label className="text-sm font-semibold text-gray-700 block">
+                      Create Delivery on Order Received
+                    </label>
+                    <p className="text-[10px] text-gray-500">
+                      Automatically request delivery when a new order is placed.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer accent-brand"
+                    disabled={updateMutation.isPending}
+                    {...register('create_delivery_on_order')}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="pt-4 flex justify-end">
