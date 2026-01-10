@@ -4,7 +4,7 @@ import { fetchProductById, ProductImages, updateProduct } from '@/api/products';
 import { BACKEND_URL } from '@/lib/constants';
 import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -15,7 +15,7 @@ import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
 import ProductHeader from '@/components/seller/product-form/ProductHeader';
 import ProductMedia, { ProductImageState } from '@/components/seller/product-form/ProductMedia';
-import { ProductFormValues } from '../../page'; // Import types from Add Page
+import { ProductFormValues } from '@/app/dashboard/add-product/page';
 
 export default function EditProductPage() {
   const { id } = useParams();

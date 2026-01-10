@@ -39,3 +39,21 @@ export const formatFullAddress = (order: Order) => {
     .filter(Boolean)
     .join(', ');
 };
+
+export function convertToKebabCase(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-') // spaces & underscores → dash
+    .replace(/[^a-z0-9-]/g, '') // remove special chars
+    .replace(/--+/g, '-') // collapse multiple dashes
+    .replace(/^-+|-+$/g, ''); // trim dashes
+
+  // | Input                 | Output              |
+  // | --------------------- | ------------------- |
+  // | `"Hello World"`       | `hello-world`       |
+  // | `"  Hello   World  "` | `hello-world`       |
+  // | `"Hello_World"`       | `hello-world`       |
+  // | `"Hello@World!"`      | `helloworld`        |
+  // | `"API Response Code"` | `api-response-code` |
+}

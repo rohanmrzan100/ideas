@@ -92,10 +92,13 @@ export default function PreviewProductPage() {
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
         {/* Enhanced Header with Back Button */}
         <div className="flex items-center justify-between gap-4 pb-4">
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group">
+          <Link
+            href={'/dashboard/my-products'}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors group"
+          >
             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">Back to Products</span>
-          </button>
+          </Link>
 
           <div className="flex gap-3">
             <button

@@ -12,28 +12,11 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  Check,
-  Loader2,
-  MapPin,
-  Minus,
-  Package,
-  Plus,
-  Save,
-  Trash2,
-  Truck,
-  User,
-  Phone,
-  Home,
-  ShoppingBag,
-} from 'lucide-react';
+import { ArrowLeft, Loader2, Minus, Plus, Save, ShoppingBag, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-
-// --- Types ---
 
 type OrderItem = {
   color: string;
@@ -61,7 +44,6 @@ interface EditOrderFormProps {
 export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderFormProps) {
   const queryClient = useQueryClient();
 
-  // --- 1. Helper: Parse existing description string into objects ---
   const parseItems = (description: string): OrderItem[] => {
     if (!description) return [];
     try {
@@ -84,8 +66,7 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
     }
   };
 
-  // --- 2. Form Setup ---
-  const { register, handleSubmit, control, watch, reset, setValue } = useForm<OrderFormValues>({
+  const { register, handleSubmit, control, watch, setValue } = useForm<OrderFormValues>({
     defaultValues: {
       recipient_name: order.recipient_name || '',
       recipient_phone: order.recipient_phone || '',
@@ -102,19 +83,25 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
   const selectedCityId = watch('recipient_city');
   const pricePerItem = Number(order.product?.price || 0);
 
-  // --- 3. Selection State for New Items ---
   const [currentSelection, setCurrentSelection] = useState<OrderItem>({
     color: '',
     size: '',
     quantity: 1,
   });
 
-  const availableVariants = order.product?.productImages || [];
+  // FIX: Derive available colors from Variants, not just Images
+  const availableVariants = order.product?.product_variants || [];
+  const uniqueColors = Array.from(new Set(availableVariants.map((v) => v.color)));
+
   const availableSizes = Array.from(
     new Set(
       order.product?.product_variants?.map((v) => v.size) || ['Free Size', 'S', 'M', 'L', 'XL'],
     ),
   );
+
+  const getImageForColor = (color: string) => {
+    return order.product?.productImages?.find((img) => img.color === color)?.url;
+  };
 
   const handleAddItem = () => {
     if (!currentSelection.color || !currentSelection.size) {
@@ -124,13 +111,10 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
     const newItems = [...items, { ...currentSelection }];
     setValue('items', newItems);
 
-    // Auto-update total price
     const newTotal = newItems.reduce((sum, item) => sum + item.quantity * pricePerItem, 0);
     setValue('amount_to_collect', newTotal);
 
-    // Reset selection (keep color for convenience, reset qty)
     setCurrentSelection((prev) => ({ ...prev, size: '', quantity: 1 }));
-    toast.success('Item added');
   };
 
   const handleRemoveItem = (index: number) => {
@@ -139,10 +123,8 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
 
     const newTotal = newItems.reduce((sum, item) => sum + item.quantity * pricePerItem, 0);
     setValue('amount_to_collect', newTotal);
-    toast.success('Item removed');
   };
 
-  // --- 4. Data Fetching (Locations) ---
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
     queryFn: async () => {
@@ -161,15 +143,12 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
     enabled: !!selectedCityId,
   });
 
-  // --- 5. Mutation ---
   const updateMutation = useMutation({
     mutationFn: (data: OrderFormValues) => {
       const itemDescription = data.items
         .map((item) => `${item.quantity}x ${item.color}/${item.size}`)
         .join(', ');
-
       const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
-
       return updateOrder(order.id, {
         recipient_name: data.recipient_name,
         recipient_phone: data.recipient_phone,
@@ -189,24 +168,19 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
       onSuccess();
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to update order');
+      console.log(err);
+      toast.error('Failed to update order');
     },
   });
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header (Sticky) */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-20 shrink-0 shadow-sm">
+    <div className="flex flex-col h-full bg-linear-to-br from-gray-50 to-gray-100">
+      <div className="px-4 py-3 border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCancel}
-              className="h-8 w-8 hover:bg-gray-100"
-            >
+            <Button variant="ghost" size="icon" onClick={onCancel}>
               <ArrowLeft size={16} />
             </Button>
             <div>
@@ -235,324 +209,179 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* Status Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Truck size={14} className="text-blue-600" />
-            </div>
-            <h3 className="font-bold text-sm text-gray-900">Order Status</h3>
-          </div>
-          <Controller
-            control={control}
-            name="status"
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className="w-full bg-gray-50 border-gray-200 h-10">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={OrderStatus.PENDING}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                      Pending
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={OrderStatus.CONFIRMED}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      Confirmed
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={OrderStatus.SHIPPED}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-purple-500" />
-                      Shipped
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={OrderStatus.DELIVERED}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      Delivered
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={OrderStatus.CANCELLED}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                      Cancelled
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        {/* Customer Details */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
-              <User size={14} className="text-purple-600" />
-            </div>
-            <h3 className="font-bold text-sm text-gray-900">Customer Details</h3>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-                <User size={10} />
-                Full Name
-              </label>
-              <Input
-                {...register('recipient_name', { required: true })}
-                className="bg-gray-50 border-gray-200 h-10"
-                placeholder="Enter customer name"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-                <Phone size={10} />
-                Phone Number
-              </label>
-              <Input
-                {...register('recipient_phone', { required: true })}
-                className="bg-gray-50 border-gray-200 h-10"
-                placeholder="Enter phone number"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Delivery Location */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
-              <MapPin size={14} className="text-green-600" />
-            </div>
-            <h3 className="font-bold text-sm text-gray-900">Delivery Location</h3>
-          </div>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">
-                  City
-                </label>
-                <Controller
-                  control={control}
-                  name="recipient_city"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="bg-gray-50 border-gray-200 h-10">
-                        <SelectValue placeholder="Select city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cities.map((city: City) => (
-                          <SelectItem key={city.city_id} value={String(city.city_id)}>
-                            {city.city_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">
-                  Zone
-                </label>
-                <Controller
-                  control={control}
-                  name="recipient_zone"
-                  render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={!selectedCityId}
-                    >
-                      <SelectTrigger className="bg-gray-50 border-gray-200 h-10 disabled:opacity-50">
-                        <SelectValue placeholder="Select zone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {zones.map((zone: Zone) => (
-                          <SelectItem key={zone.zone_id} value={String(zone.zone_id)}>
-                            {zone.zone_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-                <Home size={10} />
-                Full Address
-              </label>
-              <Input
-                {...register('recipient_address')}
-                className="bg-gray-50 border-gray-200 h-10"
-                placeholder="Street address, building, landmarks..."
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Items & Payment */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
-                <Package size={14} className="text-orange-600" />
-              </div>
-              <h3 className="font-bold text-sm text-gray-900">Order Items</h3>
-            </div>
-            {items.length > 0 && (
-              <div className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                {totalItems} {totalItems === 1 ? 'item' : 'items'}
-              </div>
-            )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <label className="text-[10px] font-bold text-gray-600 uppercase">Full Name</label>
+            <Input {...register('recipient_name')} className="h-10 mt-1" />
+            <label className="text-[10px] font-bold text-gray-600 uppercase mt-2">Phone</label>
+            <Input {...register('recipient_phone')} className="h-10 mt-1" />
           </div>
 
-          {/* Add Item Section */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 mb-3">
-            <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wide block mb-2 flex items-center gap-1">
-              <Plus size={10} />
-              Add New Item
-            </label>
-
-            {/* Colors */}
-            <div className="mb-2">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-1.5">
-                Select Color
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {availableVariants.length > 0 ? (
-                  availableVariants.map((v) => {
-                    const isSelected = currentSelection.color === v.color;
-                    return (
-                      <button
-                        key={v.id || v.color}
-                        type="button"
-                        onClick={() =>
-                          setCurrentSelection((prev) => ({ ...prev, color: v.color || '' }))
-                        }
-                        className={cn(
-                          'w-12 h-12 rounded-lg border-2 overflow-hidden relative transition-all hover:scale-105',
-                          isSelected
-                            ? 'border-blue-500 ring-2 ring-blue-200 shadow-md'
-                            : 'border-gray-300 hover:border-gray-400',
-                        )}
-                        title={v.color}
-                      >
-                        <Image src={v.url} alt={v.color || ''} fill className="object-cover" />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-blue-600/40 flex items-center justify-center">
-                            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
-                              <Check size={12} className="text-blue-600" strokeWidth={3} />
-                            </div>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <p className="text-xs text-gray-400 italic">No variants available</p>
-                )}
-              </div>
-            </div>
-
-            {/* Size, Qty & Add Button */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-1">Size</p>
-                <Select
-                  value={currentSelection.size}
-                  onValueChange={(val) => setCurrentSelection((prev) => ({ ...prev, size: val }))}
-                >
-                  <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                    <SelectValue placeholder="Select size" />
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <label className="text-[10px] font-bold text-gray-600 uppercase">City</label>
+            <Controller
+              control={control}
+              name="recipient_city"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="h-10 mt-1">
+                    <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableSizes.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
+                    {cities.map((city: City) => (
+                      <SelectItem key={city.city_id} value={String(city.city_id)}>
+                        {city.city_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              )}
+            />
+            <label className="text-[10px] font-bold text-gray-600 uppercase mt-2">Zone</label>
+            <Controller
+              control={control}
+              name="recipient_zone"
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={!selectedCityId}
+                >
+                  <SelectTrigger className="h-10 mt-1">
+                    <SelectValue placeholder="Select zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {zones.map((zone: Zone) => (
+                      <SelectItem key={zone.zone_id} value={String(zone.zone_id)}>
+                        {zone.zone_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <label className="text-[10px] font-bold text-gray-600 uppercase mt-2">Address</label>
+            <Input {...register('recipient_address')} className="h-10 mt-1" />
+          </div>
+        </div>
 
-              <div className="w-24">
-                <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-1">Quantity</p>
-                <div className="flex items-center h-9 bg-white border border-gray-300 rounded-md overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentSelection((prev) => ({
-                        ...prev,
-                        quantity: Math.max(1, prev.quantity - 1),
-                      }))
-                    }
-                    className="px-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 h-full transition-colors"
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <span className="flex-1 text-center text-xs font-bold">
-                    {currentSelection.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentSelection((prev) => ({ ...prev, quantity: prev.quantity + 1 }))
-                    }
-                    className="px-2 text-gray-500 hover:bg-gray-100 hover:text-blue-600 h-full transition-colors"
-                  >
-                    <Plus size={12} />
-                  </button>
-                </div>
-              </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-bold text-sm">Order Items</h3>
+            {items.length > 0 && (
+              <span className="text-xs text-blue-600 font-semibold">
+                {totalItems} {totalItems === 1 ? 'item' : 'items'}
+              </span>
+            )}
+          </div>
 
-              <div className="flex items-end">
-                <Button
-                  onClick={handleAddItem}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-9 gap-1 shadow-sm"
+          <div className="bg-gray-50 p-2 rounded-lg border border-gray-200 mb-3">
+            <p className="text-[9px] font-bold uppercase mb-1">Color</p>
+            <div className="flex gap-1 flex-wrap">
+              {uniqueColors.map((color) => {
+                const selected = currentSelection.color === color;
+                const imgUrl = getImageForColor(color);
+
+                return (
+                  <button
+                    key={color}
+                    onClick={() => setCurrentSelection((prev) => ({ ...prev, color }))}
+                    className={cn(
+                      'w-12 h-12 rounded-md border overflow-hidden relative transition-all',
+                      selected ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-300',
+                    )}
+                    title={color}
+                  >
+                    {imgUrl ? (
+                      <Image src={imgUrl} alt={color} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                        <span
+                          className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <Select
+                value={currentSelection.size}
+                onValueChange={(val) => setCurrentSelection((prev) => ({ ...prev, size: val }))}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Select size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSizes.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="w-20 flex items-center border border-gray-300 rounded-md h-9">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentSelection((prev) => ({
+                      ...prev,
+                      quantity: Math.max(1, prev.quantity - 1),
+                    }))
+                  }
+                  className="px-2 text-gray-500 hover:text-blue-600"
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="flex-1 text-center text-xs font-bold">
+                  {currentSelection.quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentSelection((prev) => ({ ...prev, quantity: prev.quantity + 1 }))
+                  }
+                  className="px-2 text-gray-500 hover:text-blue-600"
                 >
                   <Plus size={12} />
-                  Add
-                </Button>
+                </button>
               </div>
+
+              <Button
+                onClick={handleAddItem}
+                size="sm"
+                className="bg-blue-600 text-white h-9 gap-1"
+              >
+                <Plus size={12} /> Add
+              </Button>
             </div>
           </div>
 
-          {/* Items List */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2">
             {items.length > 0 ? (
               items.map((item, index) => {
                 const itemSubtotal = item.quantity * pricePerItem;
+                const img = getImageForColor(item.color);
                 return (
                   <div
                     key={index}
-                    className="group flex items-center justify-between p-2.5 bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-lg hover:border-blue-200 hover:shadow-sm transition-all"
+                    className="flex justify-between items-center p-2.5 border rounded-lg bg-white hover:shadow-sm transition-all"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-11 h-11 bg-gray-100 rounded-lg border-2 border-gray-200 overflow-hidden relative flex items-center justify-center group-hover:border-blue-300 transition-colors">
-                        {(() => {
-                          const img = availableVariants.find((v) => v.color === item.color)?.url;
-                          return img ? (
-                            <Image src={img} alt={item.color} fill className="object-cover" />
-                          ) : (
-                            <div
-                              className="w-full h-full"
-                              style={{ backgroundColor: item.color }}
-                            />
-                          );
-                        })()}
+                    <div className="flex items-center gap-2">
+                      <div className="w-11 h-11 rounded-lg border overflow-hidden relative">
+                        {img ? (
+                          <Image src={img} alt={item.color} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full" style={{ backgroundColor: item.color }} />
+                        )}
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-gray-900">
+                        <p className="text-xs font-bold">
                           {item.color} • {item.size}
                         </p>
                         <p className="text-[10px] text-gray-500">
@@ -560,17 +389,11 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-gray-900">
-                          Rs. {itemSubtotal.toLocaleString()}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold">Rs. {itemSubtotal.toLocaleString()}</p>
                       <button
-                        type="button"
                         onClick={() => handleRemoveItem(index)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-all"
-                        title="Remove item"
+                        className="text-gray-400 hover:text-red-500"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -579,36 +402,22 @@ export default function EditOrderForm({ order, onCancel, onSuccess }: EditOrderF
                 );
               })
             ) : (
-              <div className="text-center py-6 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <div className="text-center py-6 bg-gray-50 rounded-lg border-dashed border-2 border-gray-200">
                 <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                 <p className="text-xs text-gray-500 font-medium">No items added yet</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">Add items using the form above</p>
               </div>
             )}
           </div>
 
-          {/* Total Amount */}
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg p-4 shadow-lg">
-            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
-              Total Amount to Collect
+          <div className="bg-gray-800 rounded-lg p-3 mt-3">
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 block">
+              Total Amount
             </label>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-white">Rs.</span>
-              <Input
-                type="number"
-                {...register('amount_to_collect')}
-                className="h-10 text-lg font-bold bg-gray-800 border-gray-700 text-white flex-1"
-                placeholder="0"
-              />
-            </div>
-            {items.length > 0 && (
-              <p className="text-xs text-gray-400 mt-2">
-                Calculated total: Rs.{' '}
-                {items
-                  .reduce((sum, item) => sum + item.quantity * pricePerItem, 0)
-                  .toLocaleString()}
-              </p>
-            )}
+            <Input
+              type="number"
+              {...register('amount_to_collect')}
+              className="h-10 text-white text-lg font-bold bg-gray-800 border-gray-700"
+            />
           </div>
         </div>
       </div>

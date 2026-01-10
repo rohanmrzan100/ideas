@@ -1,25 +1,31 @@
 import { Order } from '@/api/orders';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { useState, useEffect } from 'react';
-import { OrderPreview } from './order-preview';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import EditOrderPage from './order-edit';
-import { motion, AnimatePresence } from 'framer-motion';
+import { OrderPreview } from './order-preview';
 
 interface OrderDetailsSheetProps {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMode?: 'preview' | 'edit';
 }
 
-export function OrderDetailsSheet({ order, open, onOpenChange }: OrderDetailsSheetProps) {
+export function OrderDetailsSheet({
+  order,
+  open,
+  onOpenChange,
+  initialMode = 'preview',
+}: OrderDetailsSheetProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  // Reset to preview mode whenever a new order is opened
+  // Reset to the initial mode whenever a new order is opened
   useEffect(() => {
     if (open) {
-      setIsEditing(false);
+      setIsEditing(initialMode === 'edit');
     }
-  }, [open, order?.id]);
+  }, [open, order?.id, initialMode]);
 
   if (!order) return null;
 

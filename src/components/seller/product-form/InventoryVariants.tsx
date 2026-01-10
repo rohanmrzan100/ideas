@@ -1,7 +1,6 @@
-//
 'use client';
 
-import { ProductFormValues } from '@/app/dashboard/product/page';
+import { ProductFormValues } from '@/app/dashboard/add-product/page';
 import VariantGenerator from '@/components/seller/VariantGenerator';
 import {
   Command,
@@ -47,13 +46,11 @@ export default function InventoryVariants({
   });
 
   const handleBulkGenerate = (variants: { size: string; color: string; stock: number }[]) => {
-    // We allow replacing existing variants, matching the warning in the modal
     replace(variants);
   };
 
   return (
     <section>
-      {/* Header Section */}
       <div className="p-6 border-b border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-brand shadow-sm">
@@ -68,10 +65,8 @@ export default function InventoryVariants({
         <VariantGenerator onGenerate={handleBulkGenerate} suggestedColors={suggestedColors} />
       </div>
 
-      {/* Variants List */}
       <div className="p-6">
         <div className="space-y-4">
-          {/* Table Headers */}
           <div className="grid grid-cols-12 gap-4 px-1 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
             <div className="col-span-3 pl-1">Size</div>
             <div className="col-span-5">Color</div>
@@ -88,7 +83,9 @@ export default function InventoryVariants({
                 key={field.id}
                 className="grid grid-cols-12 gap-4 items-center group animate-in slide-in-from-left-2 duration-300"
               >
-                {/* Size Input */}
+                {/* FIX: Register Hidden ID to prevent data loss on update */}
+                <input type="hidden" {...register(`product_variants.${index}.id` as const)} />
+
                 <div className="col-span-3">
                   <input
                     {...register(`product_variants.${index}.size` as const, { required: true })}
@@ -97,7 +94,6 @@ export default function InventoryVariants({
                   />
                 </div>
 
-                {/* Color Input (Smart Dropdown - Visual Only) */}
                 <div className="col-span-5 relative">
                   <ColorInput
                     index={index}
@@ -108,7 +104,6 @@ export default function InventoryVariants({
                   />
                 </div>
 
-                {/* Stock Input */}
                 <div className="col-span-3">
                   <div className="relative group/stock">
                     <input
@@ -132,7 +127,6 @@ export default function InventoryVariants({
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="col-span-1 flex justify-center">
                   <button
                     type="button"
@@ -149,7 +143,6 @@ export default function InventoryVariants({
           })}
         </div>
 
-        {/* Empty State */}
         {fields.length === 0 && (
           <div className="py-12 text-center flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
             <Package size={40} className="mb-3 opacity-20" />
@@ -157,7 +150,6 @@ export default function InventoryVariants({
           </div>
         )}
 
-        {/* Add Button & Bulk Actions */}
         <div className="mt-6 flex items-center justify-between gap-4">
           <button
             type="button"
@@ -175,7 +167,6 @@ export default function InventoryVariants({
   );
 }
 
-// --- Smart Color Input Component ---
 function ColorInput({
   index,
   register,
@@ -195,15 +186,12 @@ function ColorInput({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div className="w-full h-11 relative cursor-pointer group/input">
-          {/* Actual Input (Hidden but registered) */}
           <input
             {...register(`product_variants.${index}.color`, { required: true })}
             type="text"
             className="sr-only"
             readOnly
           />
-
-          {/* Visual Display: Shows ONLY color, no text */}
           <div
             className={cn(
               'w-full h-full rounded-xl border border-gray-200 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]',
@@ -211,7 +199,6 @@ function ColorInput({
             )}
             style={{ backgroundColor: currentColor || undefined }}
           >
-            {/* If no color selected, show placeholder text */}
             {!currentColor && (
               <span className="text-gray-400 text-sm font-medium">Select Color</span>
             )}
@@ -226,8 +213,6 @@ function ColorInput({
             <CommandEmpty className="p-3 text-xs text-gray-500 text-center">
               No matching color found.
             </CommandEmpty>
-
-            {/* Suggested Colors Grid */}
             {suggestedColors.length > 0 && (
               <CommandGroup heading="Suggested Colors">
                 <div className="flex flex-wrap gap-2 p-2">

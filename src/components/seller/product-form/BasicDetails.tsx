@@ -2,7 +2,7 @@
 
 import { Tag } from 'lucide-react';
 import { Control, FieldErrors, UseFormRegister, UseFormWatch, useWatch } from 'react-hook-form';
-import { ProductFormValues } from '@/app/dashboard/product/page';
+import { ProductFormValues } from '@/app/dashboard/add-product/page';
 
 type BasicDetailsProps = {
   register: UseFormRegister<ProductFormValues>;

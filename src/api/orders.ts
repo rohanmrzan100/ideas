@@ -28,7 +28,6 @@ export type Area = {
   pickup_available: boolean;
 };
 
-// Exactly matches 'CreateOrderDto' in NestJS
 export interface CreateOrderDto {
   shop_id: string;
   product_id: string;
@@ -40,6 +39,11 @@ export interface CreateOrderDto {
   item_quantity: number;
   item_description?: string;
   amount_to_collect: number;
+  items: {
+    size: string;
+    color: string;
+    quantity: number;
+  }[];
 }
 
 // Partial for Updates
@@ -60,26 +64,35 @@ export interface Order {
   recipient_zone: number;
   item_quantity: number;
   item_description: string;
+  // Added items array for frontend display
+  items?: {
+    size: string;
+    color: string;
+    quantity: number;
+  }[];
   amount_to_collect: string;
   delivery_consignment_id: string | null;
   delivery_fee: number | null;
-  status: string;
+  status: OrderStatus;
   created_at: string;
   updated_at: string;
   shop: Shop;
   product: Product;
 }
 
+// Frontend Payload (Form Data Structure)
 export type CreateOrderPayload = {
   productId: string;
   shopId: string;
   productName: string;
   price: number;
   quantity: number;
-  variant: {
+  // Replaced 'variant' with 'items'
+  items: {
     size: string;
     color: string;
-  };
+    quantity: number;
+  }[];
   customDescription?: string;
   customer: {
     fullName: string;
@@ -96,6 +109,11 @@ export type CreateOrderPayload = {
 // --- API Functions ---
 
 export async function createOrder(data: CreateOrderPayload) {
+  // Generate description from items array
+  const generatedDescription = data.items
+    .map((i) => `${i.quantity}x ${i.color}/${i.size}`)
+    .join(', ');
+
   const payload: CreateOrderDto = {
     shop_id: data.shopId,
     product_id: data.productId,
@@ -105,10 +123,10 @@ export async function createOrder(data: CreateOrderPayload) {
     recipient_city: data.customer.cityId,
     recipient_zone: data.customer.zoneId,
     item_quantity: data.quantity,
-    item_description: data.customDescription
-      ? data.customDescription
-      : `Size: ${data.variant.size} | Color: ${data.variant.color}`,
+    item_description: data.customDescription || generatedDescription,
+    // FIX: Calculate total amount (Price * Quantity)
     amount_to_collect: Number(data.price) * data.quantity,
+    items: data.items,
   };
 
   const response = await fetch(`${BACKEND_URL}/api/v1/orders`, {
@@ -158,7 +176,6 @@ export async function fetchShopOrders(shopId: string): Promise<Order[]> {
   return result;
 }
 
-// NEW: Fetch Single Order By ID
 export async function fetchOrderById(orderId: string): Promise<Order> {
   const response = await fetch(`${BACKEND_URL}/api/v1/orders/${orderId}`, {
     method: 'GET',

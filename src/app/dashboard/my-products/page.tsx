@@ -13,6 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { convertToKebabCase } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,6 +26,7 @@ import {
   PackageX,
   Plus,
   Search,
+  SquareArrowOutUpRight,
   Trash2,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -60,6 +63,12 @@ export default function MyProductsPage() {
       toast.error('Error deleting product');
     },
   });
+
+  if (deleteMutation.isPending && !products.length) {
+    // This handles the edge case where the list might be empty or loading globally
+    // but generally we want to show the table with the loading spinner on the button
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -79,8 +88,19 @@ export default function MyProductsPage() {
         </Link>
       </div>
 
-      {products.length < 1 ? (
-        <h1>No Products found in the shop. Please add some products first</h1>
+      {products.length < 1 && !isLoading ? (
+        <div className="flex flex-col items-center justify-center h-96 text-gray-500 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+          <PackageX size={48} className="mb-4 opacity-20" />
+          <h3 className="text-lg font-bold text-gray-900">No Products Found</h3>
+          <p className="mb-6 text-sm">Get started by adding your first product to the shop.</p>
+          <Link
+            href="/dashboard/product"
+            className="inline-flex items-center justify-center gap-2 bg-brand text-white px-5 py-2.5 rounded-lg font-medium hover:bg-brand-primary/90 transition shadow-sm"
+          >
+            <Plus size={18} />
+            Add New Product
+          </Link>
+        </div>
       ) : (
         <>
           {/* Data Table Area */}
@@ -143,7 +163,8 @@ export default function MyProductsPage() {
                           <ProductRow
                             key={product.id}
                             product={product}
-                            handleDelete={(id) => deleteMutation.mutate(id)}
+                            // Pass mutateAsync to allow the child to await completion
+                            handleDelete={(id) => deleteMutation.mutateAsync(id)}
                             isDeleting={deleteMutation.isPending}
                           />
                         ))
@@ -205,9 +226,11 @@ function ProductRow({
   isDeleting,
 }: {
   product: Product;
-  handleDelete: (id: string) => void;
+  handleDelete: (id: string) => Promise<unknown>;
   isDeleting: boolean;
 }) {
+  const [open, setOpen] = useState(false); // Control dialog state locally
+
   const totalStock = product.product_variants?.reduce((acc, v) => acc + v.stock, 0) || 0;
   const variantCount = product.product_variants?.length || 0;
   const isOutOfStock = totalStock === 0;
@@ -269,6 +292,15 @@ function ProductRow({
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-2  transition-opacity">
           <Link
+            href={`/${convertToKebabCase(product.shop?.name || 'shop')}/${convertToKebabCase(
+              product.name,
+            )}`}
+            target="_blank"
+            className="p-2 text-gray-400 hover:text-brand hover:bg-brand/5 rounded-lg transition"
+          >
+            <SquareArrowOutUpRight size={18} />
+          </Link>
+          <Link
             href={`/dashboard/product/${product.id}/preview`}
             className="p-2 text-gray-400 hover:text-brand hover:bg-brand/5 rounded-lg transition"
           >
@@ -281,14 +313,11 @@ function ProductRow({
             <Edit size={18} />
           </Link>
 
-          <AlertDialog>
+          <AlertDialog open={open} onOpenChange={setOpen}>
             <AlertDialogTrigger asChild>
-              <Link
-                href={`/dashboard/product/${product.id}/preview`}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-              >
+              <Button className="p-2 text-red-600  bg-transparent  hover:bg-red-200">
                 <Trash2 size={18} />
-              </Link>
+              </Button>
             </AlertDialogTrigger>
 
             <AlertDialogContent>
@@ -300,13 +329,29 @@ function ProductRow({
               </AlertDialogHeader>
 
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-red-600 hover:bg-red-700"
-                  onClick={() => handleDelete(product.id)}
                   disabled={isDeleting}
+                  onClick={async (e) => {
+                    // Prevent default closing behavior
+                    e.preventDefault();
+                    try {
+                      await handleDelete(product.id);
+                      setOpen(false); // Close only on success
+                    } catch (error) {
+                      // On error, we keep the dialog open to allow retry or cancel
+                      console.error('Delete failed', error);
+                    }
+                  }}
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="animate-spin h-4 w-4" /> Deleting...
+                    </div>
+                  ) : (
+                    'Delete'
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

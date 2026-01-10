@@ -50,7 +50,7 @@ type ProductMediaProps = {
   images: ProductImageState[];
   uploadError: string | null;
   availableColors: string[];
-  onImagesAdded: (files: File[]) => void; // Changed from onImageSelect
+  onImagesAdded: (files: File[]) => void;
   onRemoveImage: (id: string) => void;
   onAssignColor: (id: string, color: string) => void;
 };
@@ -64,24 +64,16 @@ export default function ProductMedia({
   onAssignColor,
 }: ProductMediaProps) {
   const [cropImage, setCropImage] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-
-      // If exactly one image is selected, offer to crop it
-      if (files.length === 1) {
-        const file = files[0];
-        setPendingFile(file);
-        setCropImage(URL.createObjectURL(file));
-        // Reset input so same file can be selected again if cancelled
-        e.target.value = '';
-      } else {
-        // Bulk upload: skip crop
-        onImagesAdded(files);
-        e.target.value = '';
-      }
+      const file = e.target.files[0];
+      // FIX: Force crop for every upload. Multi-select disabled in input below.
+      setPendingFile(file);
+      setCropImage(URL.createObjectURL(file));
+      e.target.value = '';
     }
   };
 
@@ -94,8 +86,6 @@ export default function ProductMedia({
 
   const handleCropCancel = (open: boolean) => {
     if (!open) {
-      // If cancelled, just upload original if it exists?
-      // Or simply cancel the add? Standard UX is cancel the add.
       if (cropImage) URL.revokeObjectURL(cropImage);
       setCropImage(null);
       setPendingFile(null);
@@ -147,7 +137,7 @@ export default function ProductMedia({
             >
               <input
                 type="file"
-                multiple
+                // FIX: Removed 'multiple' to enforce single-file flow with crop
                 accept="image/png, image/jpeg, image/webp"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={handleFileChange}
@@ -158,7 +148,7 @@ export default function ProductMedia({
                 <ImagePlus size={32} />
               </div>
               <p className="text-sm font-bold text-gray-600 group-hover:text-brand">Upload Image</p>
-              <p className="text-xs text-gray-400 mt-1">Single file to crop</p>
+              <p className="text-xs text-gray-400 mt-1">Click to browse & crop</p>
             </label>
           )}
         </div>
@@ -216,7 +206,6 @@ function ImageCard({
 
   return (
     <div className="flex flex-col gap-3 group">
-      {/* 1. Image Container */}
       <div
         className={cn(
           'relative aspect-4/5 bg-gray-100 rounded-xl border overflow-hidden shadow-sm transition-all group-hover:shadow-md',
@@ -259,7 +248,6 @@ function ImageCard({
         )}
       </div>
 
-      {/* 2. Controls Area */}
       <div className="relative">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

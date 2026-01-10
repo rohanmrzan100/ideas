@@ -75,8 +75,8 @@ const SidebarContent = ({ isActive, handleLogout }: any) => (
       <NavItem
         icon={<Plus size={20} />}
         label="Add Product"
-        href="/dashboard/product"
-        active={isActive('/dashboard/product')}
+        href="/dashboard/add-product"
+        active={isActive('/dashboard/add-product')}
       />
 
       <div className="px-3 pt-6 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -186,17 +186,12 @@ const TopHeader = ({ user, handleLogout }: any) => {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex items-center gap-3 pl-3 pr-1 py-1 rounded-full hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all outline-none group ml-1">
+            <button className="flex items-center gap-3 pl-3 pr-1 py-1 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all outline-none group ml-1">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-bold text-gray-900 leading-none group-hover:text-brand transition-colors whitespace-nowrap">
                   {user?.name || 'Seller'}
                 </p>
-                <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_3px_rgba(34,197,94,0.6)]" />
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {user?.role || 'Seller'}
-                  </p>
-                </div>
+                <div className="flex items-center justify-end gap-1.5 mt-1.5"></div>
               </div>
 
               <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-100 border border-gray-200 group-hover:border-brand/20 overflow-hidden relative shadow-sm transition-all flex items-center justify-center shrink-0">

@@ -1,10 +1,10 @@
 'use client';
 
+import { BACKEND_URL } from '@/lib/constants';
+import { useAppSelector } from '@/store/hooks';
+import { AlertCircle, CheckCircle2, Info, Lightbulb, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useAppSelector } from '@/store/hooks';
-import { BACKEND_URL } from '@/lib/constants';
-import { CheckCircle2, AlertCircle, Info, Lightbulb, Sparkles } from 'lucide-react';
 
 import BasicDetails from '@/components/seller/product-form/BasicDetails';
 import InventoryVariants from '@/components/seller/product-form/InventoryVariants';
@@ -13,18 +13,18 @@ import ProductMedia, { ProductImageState } from '@/components/seller/product-for
 
 import { toast } from 'sonner';
 
-// UI Components
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 
 export type ProductVariant = {
+  id?: string;
   size: string;
   color: string;
   stock: number;
@@ -67,6 +67,7 @@ export default function AddProductPage() {
       description: '',
       price: 0,
       display_price: 0,
+      category: '',
       product_variants: [{ size: 'Free Size', color: 'Standard', stock: 10 }],
     },
   });
@@ -113,7 +114,6 @@ export default function AddProductPage() {
     }
   };
 
-  // UPDATED: Now accepts an array of Files, not an event
   const handleImagesAdded = (files: File[]) => {
     if (productImages.length + files.length > 8) {
       setDialogState({
@@ -149,6 +149,27 @@ export default function AddProductPage() {
 
   const handleAssignColor = (id: string, color: string) => {
     setProductImages((prev) => prev.map((img) => (img.id === id ? { ...img, color: color } : img)));
+  };
+
+  // --- NEW: Handle dialog close with form reset ---
+  const handleDialogClose = (open: boolean) => {
+    setDialogState((prev) => ({ ...prev, open }));
+
+    // Only reset form when closing a success dialog
+    if (!open && dialogState.type === 'success') {
+      reset({
+        name: '',
+        description: '',
+        price: 0,
+        display_price: 0,
+        category: '',
+        product_variants: [{ size: 'Free Size', color: 'Standard', stock: 10 }],
+      });
+
+      // Clean up image URLs
+      productImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      setProductImages([]);
+    }
   };
 
   // --- Submission Handler ---
@@ -216,13 +237,10 @@ export default function AddProductPage() {
         title: 'Product Created!',
         message: 'Your product is now live in your store inventory.',
       });
-      // --- Success Actions ---
+
       toast.success('Product Created Successfully!');
 
-      // Reset
-      reset();
-      productImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
-      setProductImages([]);
+      // NOTE: Form reset now happens in handleDialogClose when dialog closes
     } catch (error) {
       console.error(error);
       setDialogState({
@@ -301,15 +319,12 @@ export default function AddProductPage() {
       </div>
 
       {/* 3. Feedback Dialog */}
-      <Dialog
-        open={dialogState.open}
-        onOpenChange={(open) => setDialogState((prev) => ({ ...prev, open }))}
-      >
+      <Dialog open={dialogState.open} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-4">
               <div
-                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 \${
+                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
                   dialogState.type === 'success'
                     ? 'bg-green-100 text-green-600'
                     : 'bg-red-100 text-red-600'
@@ -331,7 +346,7 @@ export default function AddProductPage() {
             <Button
               type="button"
               variant={dialogState.type === 'success' ? 'outline' : 'secondary'}
-              onClick={() => setDialogState((prev) => ({ ...prev, open: false }))}
+              onClick={() => handleDialogClose(false)}
             >
               Close
             </Button>
@@ -339,7 +354,7 @@ export default function AddProductPage() {
               <Button
                 type="button"
                 onClick={() => {
-                  setDialogState((prev) => ({ ...prev, open: false }));
+                  handleDialogClose(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >

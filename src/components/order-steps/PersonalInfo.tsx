@@ -1,6 +1,6 @@
 'use client';
 
-import { Area, City, getAreas, getCities, getZones, Zone } from '@/api/orders';
+import { City, getCities, getZones, Zone } from '@/api/orders';
 import {
   Command,
   CommandEmpty,
@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
+import { ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
@@ -26,7 +26,6 @@ type StepShippingProps = {
 type SelectionState = {
   city: City | null;
   zone: Zone | null;
-  area: Area | null;
 };
 
 export default function PersonalInfo({ register, setValue }: StepShippingProps) {
@@ -36,7 +35,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
   const [selection, setSelection] = useState<SelectionState>({
     city: null,
     zone: null,
-    area: null,
   });
 
   const { data: cities, isLoading: loadingCities } = useQuery({
@@ -58,41 +56,29 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     enabled: !!selection.city,
   });
 
-  const { data: areas, isLoading: loadingAreas } = useQuery({
-    queryKey: ['areas', selection.zone?.zone_id],
-    queryFn: async () => {
-      if (!selection.zone) return [];
-      const data = await getAreas(selection.zone.zone_id);
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: !!selection.zone,
-  });
+  // Removed Area Query
 
-  const step = !selection.city ? 'CITY' : !selection.zone ? 'ZONE' : 'AREA';
+  const step = !selection.city ? 'CITY' : 'ZONE';
 
   const handleCitySelect = (city: City) => {
-    setSelection({ city, zone: null, area: null });
+    setSelection({ city, zone: null });
     setSearch('');
     setValue('district', city.city_name);
-    setValue('cityId', city.city_id); // Capture ID
+    setValue('cityId', city.city_id);
   };
 
   const handleZoneSelect = (zone: Zone) => {
-    setSelection((prev) => ({ ...prev, zone, area: null }));
+    setSelection((prev) => ({ ...prev, zone }));
     setSearch('');
-    setValue('zoneId', zone.zone_id); // Capture ID
+    setValue('zoneId', zone.zone_id);
+    setOpen(false); // Close immediately after Zone selection
   };
 
-  const handleAreaSelect = (area: Area) => {
-    setSelection((prev) => ({ ...prev, area }));
-    setSearch('');
-    setOpen(false);
-    setValue('location', area.area_name);
-  };
+  // Removed handleAreaSelect
 
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelection({ city: null, zone: null, area: null });
+    setSelection({ city: null, zone: null });
     setValue('district', '');
     setValue('location', '');
     setValue('cityId', 0);
@@ -101,10 +87,8 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     setOpen(true);
   };
 
-  // ... Rest of the JSX remains the same
   return (
     <div className="p-6 md:p-10 space-y-8">
-      {/* ... header ... */}
       <div className="space-y-2">
         <h2 className="text-2xl font-extrabold text-gray-900">Shipping Details</h2>
         <p className="text-gray-500">Where should we deliver your order?</p>
@@ -148,6 +132,7 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
           </h3>
 
           <div className="flex flex-col gap-4">
+            {/* City & Zone Selector */}
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <div
@@ -169,28 +154,16 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                     {selection.zone && selection.zone.zone_name !== selection.city?.city_name && (
                       <div className="flex items-center gap-1">
                         <ChevronRight className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">
+                        <span className="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">
                           {selection.zone.zone_name}
                         </span>
                       </div>
                     )}
 
-                    {selection.area && (
-                      <>
-                        {selection.area.area_name !== selection.zone?.zone_name &&
-                          selection.area.area_name !== selection.city?.city_name && (
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          )}
-                        <span className="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">
-                          {selection.area.area_name}
-                        </span>
-                      </>
-                    )}
-
-                    {selection.city && !selection.area && (
+                    {selection.city && !selection.zone && (
                       <span className="text-gray-400 italic flex items-center">
                         <ChevronRight className="h-4 w-4 text-gray-400" />
-                        {selection.zone ? 'Select Area...' : 'Select Zone...'}
+                        Select Zone...
                       </span>
                     )}
                   </div>
@@ -211,26 +184,20 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
               <PopoverContent className="w-[340px] p-0 rounded-xl shadow-lg" align="start">
                 <Command shouldFilter={false}>
                   <CommandInput
-                    placeholder={
-                      step === 'CITY'
-                        ? 'Search city...'
-                        : step === 'ZONE'
-                        ? 'Search zone...'
-                        : 'Search area...'
-                    }
+                    placeholder={step === 'CITY' ? 'Search city...' : 'Search zone...'}
                     value={search}
                     onValueChange={setSearch}
                     className="h-11"
                   />
                   <CommandList className="max-h-[300px]">
-                    {(loadingCities || loadingZones || loadingAreas) && (
+                    {(loadingCities || loadingZones) && (
                       <div className="flex items-center justify-center py-6 text-brand">
                         <Loader2 className="h-5 w-5 animate-spin mr-2" />
                         Loading...
                       </div>
                     )}
 
-                    {!loadingCities && !loadingZones && !loadingAreas && (
+                    {!loadingCities && !loadingZones && (
                       <CommandEmpty>No results found.</CommandEmpty>
                     )}
 
@@ -265,10 +232,14 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                                 className="py-3 cursor-pointer"
                               >
                                 <span>{zone.zone_name}</span>
-                                <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
+                                {/* Changed visual cue to Check since this is the final step */}
+                                <div className="ml-auto h-4 w-4 bg-brand/10 rounded-full flex items-center justify-center">
+                                  <div className="h-2 w-2 bg-brand rounded-full" />
+                                </div>
                               </CommandItem>
                             ))
                         ) : (
+                          // Safe Fallback if no zones found
                           <CommandItem
                             value={selection.city!.city_name}
                             onSelect={() =>
@@ -280,43 +251,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                             className="py-3 cursor-pointer font-medium"
                           >
                             <span>{selection.city?.city_name}</span>
-                            <ChevronRight className="ml-auto h-4 w-4 text-gray-400" />
-                          </CommandItem>
-                        )}
-                      </CommandGroup>
-                    )}
-
-                    {step === 'AREA' && !loadingAreas && (
-                      <CommandGroup heading={`${selection.zone?.zone_name} > Select Area`}>
-                        {areas && areas.length > 0 ? (
-                          areas
-                            .filter((a) => a.area_name.toLowerCase().includes(search.toLowerCase()))
-                            .map((area) => (
-                              <CommandItem
-                                key={area.area_id}
-                                value={area.area_name}
-                                onSelect={() => handleAreaSelect(area)}
-                                className="py-3 cursor-pointer"
-                              >
-                                <span>{area.area_name}</span>
-                                <Check className="ml-auto h-4 w-4 text-brand" />
-                              </CommandItem>
-                            ))
-                        ) : (
-                          <CommandItem
-                            value={selection.zone!.zone_name}
-                            onSelect={() =>
-                              handleAreaSelect({
-                                area_id: selection.zone!.zone_id,
-                                area_name: selection.zone!.zone_name,
-                                home_delivery_available: true,
-                                pickup_available: true,
-                              })
-                            }
-                            className="py-3 cursor-pointer font-medium"
-                          >
-                            <span>{selection.zone?.zone_name}</span>
-                            <Check className="ml-auto h-4 w-4 text-brand" />
                           </CommandItem>
                         )}
                       </CommandGroup>
@@ -326,14 +260,15 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
               </PopoverContent>
             </Popover>
 
+            {/* Manual Address Input (Now maps to 'location') */}
             <div className="relative group">
               <MapPin
                 className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
                 size={18}
               />
               <textarea
-                {...register('landmark')}
-                placeholder="Detailed Address (Street / House No / Landmark)"
+                {...register('location', { required: true })} // Changed from landmark to location
+                placeholder="Street Address, House No, Landmark..."
                 rows={3}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none resize-none text-sm placeholder:text-gray-500"
               />

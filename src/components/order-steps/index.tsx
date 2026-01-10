@@ -1,18 +1,18 @@
 'use client';
 
 import { createOrder } from '@/api/orders';
+import { Product } from '@/api/products';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ChevronDown, ChevronUp, Loader2, ShoppingBag } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { useMemo, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import Carousel from '../Carousel';
 import CheckoutFooter from './Footer';
 import ProductInfo from './ProductInfo';
 import Stepper from './Stepper';
-import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import { Product } from '@/api/products';
 
 const PersonalInfo = dynamic(() => import('./PersonalInfo'), {
   loading: () => (
@@ -106,7 +106,8 @@ const OrderingSteps = ({ product }: { product: Product }) => {
     let isValid = false;
     if (step === 1) {
       if (!formData.items || formData.items.length === 0) {
-        toast.info('Please select both size and color.');
+        // UX IMPROVEMENT: Clearer message
+        toast.error('Please add at least one item to your order.');
         return;
       }
       isValid = true;
@@ -114,7 +115,8 @@ const OrderingSteps = ({ product }: { product: Product }) => {
     if (step === 2) {
       isValid = await trigger(['fullName', 'phoneNumber', 'district', 'location']);
       if (isValid && (!formData.cityId || !formData.zoneId)) {
-        alert('Please select a valid City and Zone from the list');
+        // UX IMPROVEMENT: Toast instead of alert
+        toast.error('Please select a valid City and Zone from the list');
         isValid = false;
       }
     }
@@ -130,6 +132,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
 
   const onSubmit: SubmitHandler<CheckoutFormData> = async (data) => {
     setIsSubmitting(true);
+    // Generate a human-readable description for the legacy field
     const combinedDescription = data.items
       .map((item) => `${item.quantity}x ${item.color}/${item.size}`)
       .join(', ');
@@ -141,10 +144,7 @@ const OrderingSteps = ({ product }: { product: Product }) => {
         productName: product.name,
         price: product.price,
         quantity: totalQuantity,
-        variant: {
-          size: data.items.length === 1 ? data.items[0].size : 'Mixed',
-          color: data.items.length === 1 ? data.items[0].color : 'Mixed',
-        },
+        items: data.items, // Pass the array of variants directly
         customDescription: combinedDescription,
         customer: {
           fullName: data.fullName,
@@ -220,8 +220,6 @@ const OrderingSteps = ({ product }: { product: Product }) => {
         )}
       </div>
 
-      {/* REMOVED: Old independent Desktop Stepper container */}
-
       <div className="flex-1 overflow-hidden relative">
         <div className="h-full flex flex-col md:grid md:grid-cols-2">
           {/* Left Side: Carousel */}
@@ -238,7 +236,6 @@ const OrderingSteps = ({ product }: { product: Product }) => {
 
           {/* Right Side: Form Content + NEW Stepper Location */}
           <div className="flex-1 overflow-y-auto h-full bg-gray-50 md:bg-white relative">
-            {/* ADDED: Stepper here for Desktop (inside the scrollable right area) */}
             <div className="hidden md:block">
               <Stepper step={step} steps={checkoutSteps} />
             </div>
