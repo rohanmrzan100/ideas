@@ -1,5 +1,6 @@
 import { BACKEND_URL } from '@/lib/constants';
-import { Product, Shop } from './products';
+import { Product } from './products';
+import { Shop } from './shop';
 
 // --- Backend Types ---
 export enum OrderStatus {
@@ -61,6 +62,7 @@ export interface Order {
   item_description: string;
   amount_to_collect: string;
   delivery_consignment_id: string | null;
+  delivery_fee: number | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -125,7 +127,6 @@ export async function createOrder(data: CreateOrderPayload) {
   return await response.json();
 }
 
-// NEW: Generic Update Function
 export async function updateOrder(orderId: string, data: UpdateOrderDto) {
   const response = await fetch(`${BACKEND_URL}/api/v1/orders/${orderId}`, {
     method: 'PATCH',
@@ -207,4 +208,38 @@ export async function getAreas(zone_id: number) {
   } catch (error) {
     throw new Error(`${error}`);
   }
+}
+
+export async function requestPathaoDelivery(orderId: string) {
+  const response = await fetch(`${BACKEND_URL}/api/v1/orders/request-delivery`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ orderId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to request delivery');
+  }
+  return await response.json();
+}
+
+export async function cancelPathaoDelivery(orderId: string) {
+  const response = await fetch(`${BACKEND_URL}/api/v1/orders/delivery/cancel`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ id: orderId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to cancel delivery');
+  }
+  return await response.json();
 }

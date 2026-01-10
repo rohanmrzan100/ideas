@@ -5,7 +5,14 @@ import { AlertCircle, Loader2, Package, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 // API & Store
-import { fetchShopOrders, Order, OrderStatus, updateOrderStatus } from '@/api/orders';
+import {
+  cancelPathaoDelivery,
+  fetchShopOrders,
+  Order,
+  OrderStatus,
+  requestPathaoDelivery,
+  updateOrderStatus,
+} from '@/api/orders';
 import { useAppSelector } from '@/store/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -110,6 +117,29 @@ export default function OrderPage() {
     );
   }
 
+  // --- Delivery Handlers ---
+  const handleCreateDelivery = async (id: string) => {
+    toast.promise(requestPathaoDelivery(id), {
+      loading: 'Requesting delivery...',
+      success: () => {
+        queryClient.invalidateQueries({ queryKey: ['shop-orders'] });
+        return 'Delivery requested successfully';
+      },
+      error: (err) => err.message || 'Failed to request delivery',
+    });
+  };
+
+  const handleCancelDelivery = async (id: string) => {
+    toast.promise(cancelPathaoDelivery(id), {
+      loading: 'Cancelling delivery...',
+      success: () => {
+        queryClient.invalidateQueries({ queryKey: ['shop-orders'] });
+        return 'Delivery cancelled successfully';
+      },
+      error: (err) => err.message || 'Failed to cancel delivery',
+    });
+  };
+
   return (
     <div className="space-y-6 p-1 pb-8">
       {/* Header */}
@@ -213,6 +243,9 @@ export default function OrderPage() {
                 setSearchTerm('');
                 setStatusFilter('ALL');
               }}
+              // Pass handlers
+              onCreateDelivery={handleCreateDelivery}
+              onCancelDelivery={handleCancelDelivery}
             />
           </div>
         )}

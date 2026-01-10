@@ -1,18 +1,17 @@
 import { Order } from '@/api/orders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import {
+  Calendar,
   CreditCard,
   Edit2,
+  Home,
   MapPin,
   Package,
+  Phone,
   Printer,
   User,
-  Calendar,
-  Phone,
-  Home,
 } from 'lucide-react';
 import Image from 'next/image';
 import { OrderStatusBadge } from './order-status-badge';
@@ -29,7 +28,6 @@ type ParsedItem = {
 };
 
 export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
-  // Parsing Logic
   const items: ParsedItem[] = (() => {
     if (!order.item_description) return [];
     try {
@@ -74,8 +72,32 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // const requestDeliveryMutation = useMutation({
+  //   mutationFn: () => requestPathaoDelivery(order.id),
+  //   onSuccess: () => {
+  //     toast.success('Delivery requested successfully!');
+  //     queryClient.invalidateQueries({ queryKey: ['shop-orders'] });
+  //     queryClient.invalidateQueries({ queryKey: ['order', order.id] });
+  //   },
+  //   onError: (err) => {
+  //     toast.error(err.message || 'Failed to request delivery');
+  //   },
+  // });
+
+  // const cancelDeliveryMutation = useMutation({
+  //   mutationFn: () => cancelPathaoDelivery(order.id),
+  //   onSuccess: () => {
+  //     toast.success('Delivery cancelled successfully!');
+  //     queryClient.invalidateQueries({ queryKey: ['shop-orders'] });
+  //     queryClient.invalidateQueries({ queryKey: ['order', order.id] });
+  //   },
+  //   onError: (err) => {
+  //     toast.error(err.message || 'Failed to cancel delivery');
+  //   },
+  // });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 print:bg-white">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 print:bg-white">
       <div className="max-w-4xl mx-auto p-3 md:p-4 space-y-4 pb-20 print:p-0 print:space-y-4 print:pb-0">
         {/* Header Section - Enhanced */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 print:shadow-none print:border-none">
@@ -116,11 +138,92 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
           </div>
 
           {/* Status Banner - Improved */}
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 print:hidden">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 print:hidden">
             <span className="text-xs font-semibold text-gray-700">Order Status</span>
             <OrderStatusBadge status={order.status} />
           </div>
         </div>
+
+        {/* --- Delivery Actions Section --- */}
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 print:hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <Truck size={18} className="text-red-600" /> Delivery Management
+            </h3>
+            {order.delivery_consignment_id && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Consignment Created
+              </Badge>
+            )}
+          </div>
+
+          {!order.delivery_consignment_id ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="text-sm text-gray-600">
+                <p className="font-semibold text-gray-900">Create Pathao Request</p>
+                <p className="text-xs mt-1">
+                  Automatically create a delivery request and generate a consignment ID.
+                </p>
+              </div>
+              <Button
+                onClick={() => requestDeliveryMutation.mutate()}
+                disabled={
+                  requestDeliveryMutation.isPending || order.status === OrderStatus.CANCELLED
+                }
+                className="bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
+              >
+                {requestDeliveryMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
+                  </>
+                ) : (
+                  'Request Delivery'
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold">Consignment ID</p>
+                  <p className="text-sm font-mono font-bold text-gray-800 mt-0.5 select-all">
+                    {order.delivery_consignment_id}
+                  </p>
+                </div>
+                {order.delivery_fee && (
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold">Delivery Fee</p>
+                    <p className="text-sm font-bold text-gray-800 mt-0.5">
+                      {formatCurrency(order.delivery_fee)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => cancelDeliveryMutation.mutate()}
+                  disabled={
+                    cancelDeliveryMutation.isPending || order.status === OrderStatus.CANCELLED
+                  }
+                  className="bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200"
+                >
+                  {cancelDeliveryMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cancelling...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" /> Cancel Delivery Request
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div> */}
 
         {/* Print Header */}
         <div className="hidden print:block text-center border-b-2 pb-4 mb-6">
@@ -147,7 +250,7 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
                 return (
                   <div
                     key={idx}
-                    className="group relative flex items-center gap-3 p-3 rounded-lg border-2 border-gray-100 bg-gradient-to-br from-white to-gray-50 hover:border-blue-200 hover:shadow-sm transition-all duration-200 print:border print:shadow-none print:bg-white"
+                    className="group relative flex items-center gap-3 p-3 rounded-lg border-2 border-gray-100 bg-linear-to-br from-white to-gray-50 hover:border-blue-200 hover:shadow-sm transition-all duration-200 print:border print:shadow-none print:bg-white"
                   >
                     {/* Product Image */}
                     <div className="relative w-20 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 group-hover:border-blue-300 transition-colors">
@@ -262,7 +365,7 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
         </div>
 
         {/* Payment Summary - Enhanced */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg overflow-hidden print:bg-white print:border-2 print:border-black print:shadow-none">
+        <div className="bg-linear-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg overflow-hidden print:bg-white print:border-2 print:border-black print:shadow-none">
           <div className="p-4 space-y-3">
             {/* Payment Method */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-700 print:border-gray-300">
@@ -283,7 +386,7 @@ export function OrderPreview({ order, onEdit }: OrderPreviewProps) {
             </div>
 
             {/* Total Amount */}
-            <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-4 print:bg-transparent print:border-t-2 print:border-black">
+            <div className="bg-linear-to-r from-gray-800 to-gray-900 rounded-lg p-4 print:bg-transparent print:border-t-2 print:border-black">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5 print:text-gray-600">

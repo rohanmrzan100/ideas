@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '@/lib/constants';
+import { Shop } from './shop';
 
 export type ProductVariant = {
   sku?: string;
@@ -19,14 +20,6 @@ export type ProductImages = {
   position: number;
   color?: string;
 };
-
-export interface Shop {
-  id: string;
-  name: string;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export type Product = {
   name: string;
