@@ -1,6 +1,6 @@
 'use client';
 
-import { City, getCities, getZones, Zone } from '@/api/orders';
+import { City, getAreas, getCities, getZones, Zone } from '@/api/orders';
 import {
   Command,
   CommandEmpty,
@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
+import { Check, ChevronRight, Loader2, MapPin, Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { CheckoutFormData } from '.';
@@ -56,8 +56,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
     enabled: !!selection.city,
   });
 
-  // Removed Area Query
-
   const step = !selection.city ? 'CITY' : 'ZONE';
 
   const handleCitySelect = (city: City) => {
@@ -70,11 +68,10 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
   const handleZoneSelect = (zone: Zone) => {
     setSelection((prev) => ({ ...prev, zone }));
     setSearch('');
+    setOpen(false);
+    setValue('location', zone.zone_name);
     setValue('zoneId', zone.zone_id);
-    setOpen(false); // Close immediately after Zone selection
   };
-
-  // Removed handleAreaSelect
 
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,7 +85,7 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8">
+    <div className="space-y-8">
       <div className="space-y-2">
         <h2 className="text-2xl font-extrabold text-gray-900">Shipping Details</h2>
         <p className="text-gray-500">Where should we deliver your order?</p>
@@ -132,7 +129,6 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
           </h3>
 
           <div className="flex flex-col gap-4">
-            {/* City & Zone Selector */}
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <div
@@ -154,7 +150,7 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                     {selection.zone && selection.zone.zone_name !== selection.city?.city_name && (
                       <div className="flex items-center gap-1">
                         <ChevronRight className="h-4 w-4 text-gray-400" />
-                        <span className="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-md">
+                        <span className="font-medium text-gray-900">
                           {selection.zone.zone_name}
                         </span>
                       </div>
@@ -232,14 +228,10 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                                 className="py-3 cursor-pointer"
                               >
                                 <span>{zone.zone_name}</span>
-                                {/* Changed visual cue to Check since this is the final step */}
-                                <div className="ml-auto h-4 w-4 bg-brand/10 rounded-full flex items-center justify-center">
-                                  <div className="h-2 w-2 bg-brand rounded-full" />
-                                </div>
+                                <Check className="ml-auto h-4 w-4 text-brand" />
                               </CommandItem>
                             ))
                         ) : (
-                          // Safe Fallback if no zones found
                           <CommandItem
                             value={selection.city!.city_name}
                             onSelect={() =>
@@ -251,6 +243,7 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
                             className="py-3 cursor-pointer font-medium"
                           >
                             <span>{selection.city?.city_name}</span>
+                            <Check className="ml-auto h-4 w-4 text-brand" />
                           </CommandItem>
                         )}
                       </CommandGroup>
@@ -260,15 +253,14 @@ export default function PersonalInfo({ register, setValue }: StepShippingProps) 
               </PopoverContent>
             </Popover>
 
-            {/* Manual Address Input (Now maps to 'location') */}
             <div className="relative group">
               <MapPin
                 className="absolute left-3 top-3 text-gray-400 group-focus-within:text-brand transition-colors"
                 size={18}
               />
               <textarea
-                {...register('location', { required: true })} // Changed from landmark to location
-                placeholder="Street Address, House No, Landmark..."
+                {...register('landmark')}
+                placeholder="Detailed Address (Street / House No / Landmark)"
                 rows={3}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all outline-none resize-none text-sm placeholder:text-gray-500"
               />

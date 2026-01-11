@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/command';
 import { ImageCropper } from '@/components/ImageCropper';
 
-// Declare EyeDropper API for TypeScript
 declare global {
   interface Window {
     EyeDropper?: new () => {
@@ -69,10 +68,17 @@ export default function ProductMedia({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      // FIX: Force crop for every upload. Multi-select disabled in input below.
-      setPendingFile(file);
-      setCropImage(URL.createObjectURL(file));
+      const files = Array.from(e.target.files);
+
+      // UX Improvement: If single file, offer crop. If multiple, batch upload immediately.
+      if (files.length === 1) {
+        const file = files[0];
+        setPendingFile(file);
+        setCropImage(URL.createObjectURL(file));
+      } else {
+        onImagesAdded(files);
+      }
+
       e.target.value = '';
     }
   };
@@ -88,6 +94,10 @@ export default function ProductMedia({
     if (!open) {
       if (cropImage) URL.revokeObjectURL(cropImage);
       setCropImage(null);
+
+      // If cancelled, should we upload the original?
+      // Usually better to let the user try again or upload raw.
+      // For now, we just clear state. To upload raw on cancel, we'd check pendingFile.
       setPendingFile(null);
     }
   };
@@ -137,7 +147,7 @@ export default function ProductMedia({
             >
               <input
                 type="file"
-                // FIX: Removed 'multiple' to enforce single-file flow with crop
+                multiple // Enabled multi-select for bulk upload
                 accept="image/png, image/jpeg, image/webp"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={handleFileChange}
@@ -148,7 +158,7 @@ export default function ProductMedia({
                 <ImagePlus size={32} />
               </div>
               <p className="text-sm font-bold text-gray-600 group-hover:text-brand">Upload Image</p>
-              <p className="text-xs text-gray-400 mt-1">Click to browse & crop</p>
+              <p className="text-xs text-gray-400 mt-1">Click to browse (Bulk supported)</p>
             </label>
           )}
         </div>

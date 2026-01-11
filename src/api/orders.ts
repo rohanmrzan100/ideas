@@ -103,7 +103,7 @@ export type CreateOrderPayload = {
     location: string;
     landmark?: string;
   };
-  paymentMethod: 'COD' | 'QR';
+  paymentMethod: 'COD' | 'ESEWA' | 'KHALTI';
 };
 
 // --- API Functions ---

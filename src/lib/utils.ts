@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { PLAN_TYPE } from './enums';
 import { Order } from '@/api/orders';
+import { Product } from '@/api/products';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -57,3 +58,11 @@ export function convertToKebabCase(text: string): string {
   // | `"Hello@World!"`      | `helloworld`        |
   // | `"API Response Code"` | `api-response-code` |
 }
+
+export const findImageForColor = (colorName: string, product: Product) => {
+  if (!product?.productImages?.length) return '';
+  const exact = product.productImages.find(
+    (img) => img.color?.toLowerCase() === colorName.toLowerCase(),
+  );
+  return exact?.url || product.productImages[0]?.url || '';
+};
